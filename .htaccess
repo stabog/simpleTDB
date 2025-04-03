@@ -1,0 +1,19 @@
+# Кодировка по умолчанию
+AddDefaultCharset UTF-8
+# подключаем модуль mod_rewrite
+RewriteEngine On
+# а здесь инструкции для преобразования  
+
+#RewriteCond %{HTTPS} =off 
+#RewriteRule (.*) https://%{HTTP_HOST}%{REQUEST_URI} [QSA,L]
+
+
+RewriteRule ^(.*)/(.*)/(.*)/(.*)/(.*)/(.*)/(.*)/$ index.php?links[]=$1&links[]=$2&links[]=$3&links[]=$4&links[]=$5&links[]=$6&links[]=$7 [QSA,L]
+RewriteRule ^(.*)/(.*)/(.*)/(.*)/(.*)/(.*)/$ index.php?links[]=$1&links[]=$2&links[]=$3&links[]=$4&links[]=$5&links[]=$6 [QSA,L]
+RewriteRule ^(.*)/(.*)/(.*)/(.*)/(.*)/$ index.php?links[]=$1&links[]=$2&links[]=$3&links[]=$4&links[]=$5 [QSA,L]
+RewriteRule ^(.*)/(.*)/(.*)/(.*)/$ index.php?links[]=$1&links[]=$2&links[]=$3&links[]=$4 [QSA,L]
+RewriteRule ^(.*)/(.*)/(.*)/$ index.php?links[]=$1&links[]=$2&links[]=$3 [QSA,L]
+RewriteRule ^(.*)/(.*)/$ index.php?links[]=$1&links[]=$2 [QSA,L]
+RewriteRule ^(.*)/$ index.php?links[]=$1 [QSA,L]
+
+ErrorDocument 404  /404/
