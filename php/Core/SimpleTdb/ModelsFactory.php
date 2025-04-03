@@ -2,7 +2,7 @@
 
 namespace SimpleTdb;
 
-use SimpleTdb\TextDataBaseModel as TDBM;
+use SimpleTdb\TextDataModel as TDBM;
 
 class ModelsFactory
 {
@@ -10,7 +10,7 @@ class ModelsFactory
         $models = [];
         $namespace = 'FileSearcher\\';
         
-        $bases = new \SimpleTdb\TextDataBaseModel($rootBaseName, '', 'guid');
+        $bases = new \SimpleTdb\TextDataModel($rootBaseName, '', 'guid');
         foreach ($bases->all() as $bInfo){
             $basesNames[] = $bInfo[2];
         }

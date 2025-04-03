@@ -5,6 +5,6 @@ $content = [
     "description" => "Пример описания"
 ];
 
-$html = 'test Render';
+$html = '';
 
-include 'views/index.tpl';
+include 'views/index.html';

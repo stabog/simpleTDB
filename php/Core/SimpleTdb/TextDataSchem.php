@@ -55,6 +55,27 @@ class TextDataSchem
     
     protected $post;
 
+    protected $schemItems = [
+        1 => [1, '', 'id', 0, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        2 => [2, '', 'sys', 1, 2, false, 'arra', '', 21, 2, 'Системные поля', '', '', 2, '', [], [], []],
+        3 => [3, '', 'tag', 2, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        4 => [4, '', 'increment', 3, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        5 => [5, '', 'isSystem', 4, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        6 => [6, '', 'dataUnic', 5, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        7 => [7, '', 'dataType', 6, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        8 => [8, '', 'dataSubType', 7, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        9 => [9, '', 'fieldType', 8, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        10 => [10, '', 'fieldViewType', 9, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        11 => [11, '', 'fieldLabel', 10, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        12 => [12, '', 'fieldPlaceholder', 11, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        13 => [13, '', 'fieldDescription', 12, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        14 => [14, '', 'fieldOrder', 13, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        15 => [15, '', 'fieldDefaultVal', 14, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        16 => [16, '', 'fieldProps', 15, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        17 => [17, '', 'linkProps', 16, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+        17 => [18, '', 'listItems', 17, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
+    ]; 
+
     protected array $dataSysTypes = [
         1 => ['Обычный'],
         2 => ['Системный'],
@@ -119,10 +140,13 @@ class TextDataSchem
         5 => ["required"],
     ];
 
+
+
     public array $linkTypes = ['link', 'file'];
     public array $linkedFields = [];
 
     public $arrayTypes = ['arra', 'file', 'link', 'list'];
+    
 
     public function __construct($modelName, $modelPath, $modelSchem)
     {
@@ -903,4 +927,46 @@ class TextDataSchem
 
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
+
+    public function convertListItemsToDict ($items, $isSchem = false)
+    {
+        $result = [];
+        foreach ($items as $itemId=> $itemInfo) {
+            $convertedItem = $this->convertListItemToDict ($itemInfo, $isSchem);
+            $result[$itemId] = $convertedItem;
+        }
+        return $result;
+    }
+
+    public function convertListItemToDict ($item, $isSchem = false)
+    {
+        $result = [];
+        if ($isSchem){
+            $schemItems = $this->schemItems;
+        } else {
+            $schemItems = $this->getSchem();
+        }
+        
+
+        foreach ($schemItems as $sInfo) {
+            $type = $sInfo[6];
+            $colName = $sInfo[2];
+            $colId = $sInfo[3];
+            $cureVal = '';
+            //Получаем инфо по colId
+            if (isset($item[$colId])) $cureVal = $item[$colId];
+
+            // Если link, arra, file
+            if (in_array($type, $this->linkTypes)) {
+                if (!is_array($cureVal)) $cureVal = [$cureVal];
+                $cureVal = array_diff($cureVal, [""]);
+            }
+
+            //Сохраняем инфо по colName
+            $result[$colName] = $cureVal;
+        }        
+
+        return $result;
+    }
+   
 }

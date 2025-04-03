@@ -30,6 +30,31 @@ echo $html;
     
 ?>
 
+<!-- Форма для взаимодействия с API -->
+<div class="ui container">
+    <h2 class="ui header">Форма для взаимодействия с API</h2>
+    <form id="apiForm" class="ui form">
+        <div class="field">
+            <label>ID</label>
+            <input type="text" name="id" placeholder="Введите ID">
+        </div>
+        <div class="field">
+            <label>Данные</label>
+            <textarea name="data" placeholder="Введите данные в формате JSON"></textarea>
+        </div>
+        <div class="field">
+            <label>Метод</label>
+            <select name="method" class="ui dropdown">
+                <option value="GET">GET</option>
+                <option value="POST">POST</option>
+                <option value="DELETE">DELETE</option>
+            </select>
+        </div>
+        <button class="ui button" type="submit">Отправить запрос</button>
+    </form>
+    <div id="response" class="ui segment"></div>
+</div>
+
                 
 <script src="/js/lightbox2/js/lightbox.js"></script>
 <link href="/js/lightbox2/css/lightbox.min.css" rel="stylesheet" />
@@ -260,6 +285,42 @@ function toggleAdditionalFields(fieldContainer) {
         additionalFields.style.display = 'none';
     }
 }
+
+// Обработка формы для взаимодействия с API
+document.getElementById('apiForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    let form = event.target;
+    let formData = new FormData(form);
+    let method = formData.get('method');
+    let id = formData.get('id');
+    let data = formData.get('data');
+
+    let url = '/api.php';
+    if (id) {
+        url += '?id=' + id;
+    }
+
+    let options = {
+        method: method,
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+
+    if (method === 'POST') {
+        options.body = data;
+    }
+
+    fetch(url, options)
+        .then(response => response.json())
+        .then(data => {
+            document.getElementById('response').innerText = JSON.stringify(data, null, 2);
+        })
+        .catch(error => {
+            document.getElementById('response').innerText = 'Ошибка: ' + error;
+        });
+});
 
 </script>
     

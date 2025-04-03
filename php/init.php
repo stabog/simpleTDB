@@ -170,7 +170,7 @@ if ($render and $links[0] == 'bases'){
 if ($render and $links[0] == 'homeworks'){
     
 
-    $bases = new \SimpleTdb\TextDataBaseModel('root', '', 'guid');
+    $bases = new \SimpleTdb\TextDataModel('root', '', 'guid');
     $bc = new BasesController ($bases, $links);
     $models = $bc->getModels($links);
 

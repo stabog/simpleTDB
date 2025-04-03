@@ -5,11 +5,14 @@ namespace SimpleTdb;
 
 use SimpleTdb\TextDataBase as TDB;
 use SimpleTdb\TextDataSchem as TDS;
+use SimpleTdb\FormHelpers as FH;
+use SimpleTdb\TextDataModelException;
 
-class TextDataBaseModel {
+class TextDataModel {
     protected $dbName = "";
     protected $dbPath = "";
     protected $indexType = "";
+    protected $convertToDict = false;
 
     protected $data;
     public $schem;
@@ -31,7 +34,11 @@ class TextDataBaseModel {
         $this->data = TDB::getInstance($this->dbName, $this->dbPath, $this->indexType);
         $this->schem = new TDS($this->dbName, $this->dbPath, $this->schemItems);
         $this->form = new FH();
-    }    
+    }
+    
+    public function setRespFormatToDict() {
+        $this->convertToDict = true;
+    }
 
     public function setDependencies(array $dependencies) {
         $this->models = $dependencies;
@@ -50,18 +57,39 @@ class TextDataBaseModel {
 
     public function all($filters = [])
     {        
-        return $this->data->all($filters);        
+        $data = $this->data->all($filters);
+        if ($this->convertToDict){
+            $data = $this->schem->convertListItemsToDict($data);
+        }
+        return $data;
     }
 
 
     public function get($id)
     {        
-        return $this->data->get($id);
-    }    
+        if (!$id ) {
+            throw new TextDataModelException("ID не указан.");
+        }
+
+        $item = $this->data->get($id);
+        if (!$item){
+            throw new TextDataModelException("Элемент '$id' не найден в базе.");
+            return false;
+        }
+        
+        if ($this->convertToDict){
+            $item = $this->schem->convertListItemToDict($item);
+        }
+        return $item;
+    }
 
 
     public function add($info)
     {        
+        if (!$info ) {
+            throw new TextDataModelException("Не корректные данные для add.");
+        }
+        
         $info = $this->checkValueBySchem($info);
         $newId = $this->data->add($info);
 
@@ -69,16 +97,20 @@ class TextDataBaseModel {
             $this->updateLinkedBasesNew($newId, $info);
             return $newId;
         }
+
         return false;
-        
     }
 
     
 
     public function upd($id, $info, $checkLinks=true)
-    {        
-        $info = $this->checkValueBySchem($info);
-        $lastInfo = $this->data->get($id);
+    {   
+        $lastInfo = $this->get($id);
+        
+        if (!$info ) {
+            throw new TextDataModelException("Не корректные данные для upd.");
+        }
+        $info = $this->checkValueBySchem($info);        
 
         if ($this->data->upd($id, $info)){
             if ($checkLinks){
@@ -93,13 +125,13 @@ class TextDataBaseModel {
 
     public function del($id)
     {        
-        $lastInfo = $this->data->get($id);
+        $lastInfo = $this->get($id);
         
         if ($this->data->del($id)){
             $this->updateLinkedBasesNew($id, [], $lastInfo);            
             return true;
         }
-
+        
         return false;
     }
 
@@ -239,6 +271,63 @@ class TextDataBaseModel {
         return $itemsToUpd;
 
     }
+
+
+    public function getSchem ()
+    {        
+        $data = $this->schem->getSchem();
+        $isSchem = true;
+        if ($this->convertToDict){
+            $data = $this->schem->convertListItemsToDict($data, $isSchem);
+        }
+        return $data;
+    }
+
+
+
+    // Проверить, перенести в schem
+    public function checkValueBySchem($info)
+    {
+        $result = [];
+        $schemFields = array_column($this->schem->getSchem(), 3);
+        $schemNames = array_column($this->schem->getSchem(), 2);
+
+        foreach ($info as $infoId => $value) {
+            if (!in_array($infoId, $schemFields) and !in_array($infoId, $schemNames)) {
+                //return "Ошибка: Поле '$colId' не найдено в схеме.";
+                //throw new TextDataModelException("Ошибка: Поле '$colId' не найдено в схеме.");
+                $this->schem->addCol($infoId);
+                if (is_numeric($infoId)){
+                    $schemFields[] = $infoId;
+                } else {
+                    $schemNames[] = $infoId;
+                }
+                
+            }
+        }
+
+        foreach ($this->schem->getSchem() as $sId => $sInfo) {
+            $type = $sInfo[6];
+            $colName = $sInfo[2];
+            $colId = $sInfo[3];
+            $cureVal = '';
+            if (isset($info[$colName])) $cureVal = $info[$colName];
+            if (isset($info[$colId])) $cureVal = $info[$colId];
+
+            // Если link, arra, file
+            if (in_array($type, $this->schem->linkTypes)) {
+                if (!is_array($cureVal)) $cureVal = [$cureVal];
+                $cureVal = array_diff($cureVal, [""]);
+            }
+
+            $result[$colId] = $cureVal;
+        }
+
+        return $result;
+    }
+
+
+    
 
     /*
 
@@ -384,36 +473,4 @@ class TextDataBaseModel {
     }
 
     */
-
-
-    /*
-    Вспомогательные функции
-    */
-
-
-    // Проверить, перенести в schem
-    public function checkValueBySchem($info)
-    {
-        $result = [];
-        foreach ($this->schem->getSchem() as $sId => $sInfo){
-            $type = $sInfo[6];
-            $colId = $sInfo[3];
-            $cureVal = $info[$colId];
-
-            //Если link, arra, file
-            if (in_array($type, $this->schem->linkTypes)){
-                if (!is_array($cureVal)) $cureVal = [$cureVal];
-                $cureVal = array_diff($cureVal, [""]);
-            }
-
-            $result[$colId] = $cureVal;
-        }
-
-        return $result;
-    }
-
-
-    
-
-    
 }

@@ -1,0 +1,235 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title><?= $content["title"] ?></title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8"> 
+    <meta name="description" content="<?= $content["description"] ?>"> 
+    <meta name="viewport" content="width=device-width, initial-scale=1"> 
+
+    <link rel="icon" href="/img/favicon.png">
+
+    <!-- Required -->
+    <script src="/js/jquery.min.js"></script>
+
+    <!-- Semantic UI -->
+    <link rel="stylesheet" type="text/css" href="/vendor/fomantic/ui/dist/semantic.min.css">
+    <script src="/vendor/fomantic/ui/dist/semantic.min.js"></script>
+
+    <!-- Highlight.js for JSON formatting -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <link rel="stylesheet" type="text/css" href="/css/style.css?v=24-06-22">
+    
+</head>
+<body>
+
+<?
+echo $html;
+?>
+
+<!-- Форма для взаимодействия с API -->
+<div class="ui container">
+    <h2 class="ui header">Форма для взаимодействия с API</h2>
+    <form id="apiForm" class="ui form">
+        <div class="field">
+            <label>ID приложения</label>
+            <input type="text" name="app_id" placeholder="Введите ID приложения" value="testApp">
+        </div>
+        <div class="field">
+            <label>ID базы данных</label>
+            <input type="text" name="db_id" placeholder="Введите ID базы данных" value="testBase">
+        </div>
+        <div class="field">
+            <label>ID</label>
+            <input type="text" name="id" placeholder="Введите ID">
+        </div>
+        <div class="field">
+            <label>Метод</label>
+            <select name="act" class="ui dropdown" id="actDropdown">
+                <option value="get">GET</option>
+                <option value="all">ALL</option>
+                <option value="add">ADD</option>
+                <option value="upd">UPDATE</option>
+                <option value="del">DELETE</option>
+                <option value="getSchem">GET SCHEM</option>
+            </select>
+        </div>
+        <div class="field" id="dataField" style="display: none;">
+            <label>Данные</label>
+            <div id="fieldsContainer">
+                <div class="inline fields" data-index="2">
+                    <div class="three wide field">
+                        <input type="text" name="key[2]" value="2" placeholder="Ключ">
+                    </div>
+                    <div class="ten wide field">
+                        <input type="text" name="item[2]" placeholder="Введите значение">
+                    </div>
+                    <div class="three wide field">
+                        <button type="button" class="ui icon button removeField">
+                            <i class="trash icon"></i>
+                        </button>
+                    </div>
+                </div>
+            </div>
+            <div class="field">
+                <button type="button" class="ui button" id="addFieldButton">Добавить поле</button>
+            </div>
+        </div>
+        
+        <button class="ui button" type="submit">Отправить запрос</button>
+    </form>
+    <div id="response" class="ui segment"></div>
+</div>
+
+
+<script type="text/javascript" charset="utf-8">
+
+
+
+$('.ui.checkbox').checkbox();
+$('#progress-bar').progress();
+
+$('.message .close')
+  .on('click', function() {
+    $(this)
+      .closest('.message')
+      .transition('fade')
+    ;
+  })
+;
+
+$('.menu .item')
+  .tab()
+;
+
+$('.ui.dropdown')
+  .dropdown()
+;
+
+// Обработка формы для взаимодействия с API
+document.getElementById('apiForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    let form = event.target;
+    let formData = new FormData(form);
+    let act = formData.get('act');
+    let id = formData.get('id');
+    let app_id = formData.get('app_id');
+    let db_id = formData.get('db_id');
+    let data = {};
+
+    formData.forEach((value, key) => {
+        if (key.startsWith('item[')) {
+            let match = key.match(/item\[(\d+)\]/);
+            if (match) {
+                let index = match[1];
+                let keyValue = formData.get(`key[${index}]`);
+                data[keyValue] = value;
+            }
+        }
+    });
+
+    let url = `/api/${app_id}/${db_id}/?act=${act}`;
+    if (id) {
+        url += '&id=' + id;
+    }
+
+    let options = {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json'
+        }
+    };
+
+    if (act === 'add' || act === 'upd') {
+        options.body = JSON.stringify({ item: data });
+    }
+
+    fetch(url, options)
+        .then(response => {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                return response.text();
+            }
+        })
+        .then(data => {
+            if (typeof data === 'object') {
+                document.getElementById('response').innerHTML = `<pre><code class="json">${JSON.stringify(data, null, 2)}</code></pre>`;
+                hljs.highlightAll();
+            } else {
+                // Удаляем HTML-теги из текста
+                let cleanText = data.replace(/<[^>]*>/g, '');
+                document.getElementById('response').innerText = cleanText;
+            }
+        })
+        .catch(error => {
+            // Выводим полный ответ, если произошла ошибка
+            fetch(url, options)
+                .then(response => response.text())
+                .then(fullResponse => {
+                    document.getElementById('response').innerText = 'Ошибка: ' + fullResponse;
+                })
+                .catch(err => {
+                    document.getElementById('response').innerText = 'Ошибка: ' + err;
+                });
+        });
+});
+
+// Динамическое добавление и удаление полей
+document.getElementById('addFieldButton').addEventListener('click', function() {
+    let container = document.getElementById('fieldsContainer');
+    let lastField = container.querySelector('.inline.fields:last-of-type');
+    let index = lastField ? parseInt(lastField.getAttribute('data-index')) + 1 : 2;
+
+    let newField = document.createElement('div');
+    newField.className = 'inline fields';
+    newField.setAttribute('data-index', index);
+    newField.innerHTML = `
+        <div class="three wide field">
+            <input type="text" name="key[${index}]" value="${index}" placeholder="Ключ">
+        </div>
+        <div class="ten wide field">
+            <input type="text" name="item[${index}]" placeholder="Введите значение">
+        </div>
+        <div class="three wide field">
+            <button type="button" class="ui icon button removeField">
+                <i class="trash icon"></i>
+            </button>
+        </div>
+    `;
+
+    container.appendChild(newField);
+
+    newField.querySelector('.removeField').addEventListener('click', function() {
+        newField.remove();
+    });
+});
+
+document.querySelectorAll('.removeField').forEach(button => {
+    button.addEventListener('click', function() {
+        button.closest('.inline.fields').remove();
+    });
+});
+
+// Управление видимостью поля "Данные"
+document.getElementById('actDropdown').addEventListener('change', function() {
+    let act = this.value;
+    let dataField = document.getElementById('dataField');
+    if (act === 'add' || act === 'upd') {
+        dataField.style.display = 'block';
+    } else {
+        dataField.style.display = 'none';
+    }
+});
+
+</script>
+    
+    
+
+</body>
+</html>
