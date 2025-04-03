@@ -1,0 +1,14 @@
+{
+    "name": "bogus/zmutual",
+    "require": {
+        "fomantic/ui": "^2.9",
+        "components/jquery": "1.9.*",
+        "phpmailer/phpmailer": "^6.9",
+        "james-heinrich/getid3": "^1.9"
+    },
+    "config": {
+        "allow-plugins": {
+            "robloach/component-installer": true
+        }
+    }
+}
