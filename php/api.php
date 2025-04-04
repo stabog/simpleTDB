@@ -55,7 +55,9 @@ $appName = $links[1];
 $baseName = $links[2];
 $dbPath = 'apps/'.$appName.'/db';
 $model = new TDM($baseName, $dbPath, 'guid');
-$model->setRespFormatToDict();
+$model->setRespFormatToDict(
+    $separateKeys = true,
+);
 
 $id = $id ?? null;
 $input = file_get_contents('php://input');

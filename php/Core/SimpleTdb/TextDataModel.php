@@ -13,6 +13,7 @@ class TextDataModel {
     protected $dbPath = "";
     protected $indexType = "";
     protected $convertToDict = false;
+    protected $convertProps = [];
 
     protected $data;
     public $schem;
@@ -36,8 +37,9 @@ class TextDataModel {
         $this->form = new FH();
     }
     
-    public function setRespFormatToDict() {
+    public function setRespFormatToDict($separateKeys = false) {
         $this->convertToDict = true;
+        if ($separateKeys) $this->convertProps['separateKeys'] = true;
     }
 
     public function setDependencies(array $dependencies) {
@@ -59,7 +61,7 @@ class TextDataModel {
     {        
         $data = $this->data->all($filters);
         if ($this->convertToDict){
-            $data = $this->schem->convertListItemsToDict($data);
+            $data = $this->schem->convertListItemsToDict($data, $this->convertProps);
         }
         return $data;
     }
@@ -106,7 +108,7 @@ class TextDataModel {
     public function upd($id, $info, $checkLinks=true)
     {   
         $lastInfo = $this->get($id);
-        
+
         if (!$info ) {
             throw new TextDataModelException("Не корректные данные для upd.");
         }
@@ -276,9 +278,10 @@ class TextDataModel {
     public function getSchem ()
     {        
         $data = $this->schem->getSchem();
-        $isSchem = true;
+        $props = $this->convertProps;
+        $props["isSchem"] = true;
         if ($this->convertToDict){
-            $data = $this->schem->convertListItemsToDict($data, $isSchem);
+            $data = $this->schem->convertListItemsToDict($data, $props);
         }
         return $data;
     }

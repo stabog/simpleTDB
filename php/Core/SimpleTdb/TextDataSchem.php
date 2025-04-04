@@ -928,20 +928,26 @@ class TextDataSchem
         return round($bytes, $precision) . ' ' . $units[$pow];
     }
 
-    public function convertListItemsToDict ($items, $isSchem = false)
+    public function convertListItemsToDict ($items, $props=[])
     {
         $result = [];
         foreach ($items as $itemId=> $itemInfo) {
-            $convertedItem = $this->convertListItemToDict ($itemInfo, $isSchem);
-            $result[$itemId] = $convertedItem;
+            $convertedItem = $this->convertListItemToDict ($itemInfo, $props);
+            if (isset($props['separateKeys'])){
+                unset($convertedItem["id"]);
+                $result[$itemId] = $convertedItem;
+            } else {
+                $result[] = $convertedItem;
+            }
+            
         }
         return $result;
     }
 
-    public function convertListItemToDict ($item, $isSchem = false)
+    public function convertListItemToDict ($item, $props=[])
     {
         $result = [];
-        if ($isSchem){
+        if (isset($props["isSchem"])){
             $schemItems = $this->schemItems;
         } else {
             $schemItems = $this->getSchem();
