@@ -15,11 +15,13 @@ class TextDataBase implements TDBInterface
         "indexType" => 'num',
         "lastId" => 0,
     ];
-    protected $possibleIndexTypes = ["num", "guid"];
+    protected $possibleIndexTypes = ["num", "guid", "str"];
 
     protected $id = '';
     protected $activeUser = 0;
 
+    // Добавляем свойство для длины строки
+    protected $stringLength = 6;
 
     protected static $sep = ["::", "||", "&&", "##", "@@", "%%"];
     protected static $instances = [];
@@ -32,7 +34,6 @@ class TextDataBase implements TDBInterface
         }
         return self::$instances[$param];
     }
-
 
     protected function __construct(string $dbName, string $dbPath, string $indexType)
     {
@@ -221,12 +222,17 @@ class TextDataBase implements TDBInterface
 
             if ($this->props["indexType"] == 'guid'){
                 $info[0] = $this->guidv4();
+            } else if ($this->props["indexType"] == 'str') {
+                $info[0] = $this->generateUniqueString($this->stringLength); // Генерация строкового идентификатора
+                while (isset($this->items[$info[0]])) {
+                    $info[0] = $this->generateUniqueString($this->stringLength); // Проверка на уникальность
+                }
             } else {
                 $info[0] = $count;
             }
 
             $info[1] = $this->setItemProps([], $this->activeUser);
-            $this->items[$count] = $info;
+            $this->items[$info[0]] = $info;
         }
         $this->fileSave();
         
@@ -352,9 +358,15 @@ class TextDataBase implements TDBInterface
 
     protected function setLastId(array $array)
     {
-        $keys = array_keys($array);
-        sort($keys);
-        $this->props["lastId"] = end($keys);
+        if ($this->props["indexType"] === "num") {
+            $keys = array_keys($array);
+            sort($keys);
+            $this->props["lastId"] = end($keys);
+        } else if ($this->props["indexType"] === "str") {
+            // Обработка строкового идентификатора
+            $keys = array_keys($array);
+            $this->props["lastId"] = end($keys);
+        }
     }
 
     protected function fileRead(bool $isIndexed = true): void
@@ -380,6 +392,10 @@ class TextDataBase implements TDBInterface
 
             if ($this->props["indexType"] === "num") {
                 $this->setLastId($result);
+            } else if ($this->props["indexType"] === "str") {
+                // Обработка строкового идентификатора
+                $keys = array_keys($result);
+                $this->props["lastId"] = end($keys);
             }
             if (isset($result[0])) {
                 $this->head = $result[0];
@@ -397,11 +413,19 @@ class TextDataBase implements TDBInterface
     {
         if ($id != '') {
             $item[0] = $id;
-        } else if ($this->props["indexType"] === "num") {
-            $item[0] = $this->props["lastId"] + 1;
-            $this->props["lastId"]++;
-        } else if ($this->props["indexType"] === "guid") {
-            $item[0] = $this->guidv4();
+        } else {
+            if ($this->props["indexType"] === "guid") {
+                $item[0] = $this->guidv4();
+            } else if ($this->props["indexType"] === "str") {
+                $item[0] = $this->generateUniqueString($this->stringLength);
+                // Проверка на уникальность
+                while (isset($this->items[$item[0]])) {
+                    $item[0] = $this->generateUniqueString($this->stringLength); 
+                }
+            } else {
+                $item[0] = $this->props["lastId"] + 1;
+                $this->props["lastId"]++;
+            }
         }
 
         $string = self::arrayToString($item, self::$sep);
@@ -448,23 +472,7 @@ class TextDataBase implements TDBInterface
             throw $e;
         }
         return true;
-    }
-
-
-    protected function guidv4($data = null): string
-    {
-        // Generate 16 bytes (128 bits) of random data or use the data passed into the function.
-        $data = $data ?? random_bytes(16);
-        assert(strlen($data) == 16);
-
-        // Set version to 0100
-        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
-        // Set bits 6-7 to 10
-        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
-
-        // Output the 36 character UUID.
-        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
-    }
+    }    
 
     protected function log($message)
     {
@@ -538,4 +546,37 @@ class TextDataBase implements TDBInterface
 
         return $recurs($string, 0);
     }
+
+
+    /* Генерация id */
+
+    protected function guidv4($data = null): string
+    {
+        // Generate 16 bytes (128 bits) of random data or use the data passed into the function.
+        $data = $data ?? random_bytes(16);
+        assert(strlen($data) == 16);
+
+        // Set version to 0100
+        $data[6] = chr(ord($data[6]) & 0x0f | 0x40);
+        // Set bits 6-7 to 10
+        $data[8] = chr(ord($data[8]) & 0x3f | 0x80);
+
+        // Output the 36 character UUID.
+        return vsprintf('%s%s-%s-%s-%s-%s%s%s', str_split(bin2hex($data), 4));
+    }
+    
+    protected function generateUniqueString(int $length): string
+    {
+        $characters = '0123456789abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ';
+        $charactersLength = strlen($characters);
+        $randomString = '';
+
+        for ($i = 0; $i < $length; $i++) {
+            $randomString .= $characters[random_int(0, $charactersLength - 1)];
+        }
+
+        return $randomString;
+    }
+
+    
 }

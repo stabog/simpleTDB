@@ -21,8 +21,8 @@ class TextDataModel {
     protected $models = [];
 
     protected $schemItems = [
-        1 => [1, '', 'id', 0, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
-        2 => [2, '', 'sys', 1, 2, false, 'arra', '', 21, 2, 'Системные поля', '', '', 2, '', [], [], []],        
+        'id' => ['id', [], 0, 'Id колонки', true, true, 'text', '', '', [], [], []],
+        'ausData' => ['ausData', [], 1, 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
     ];    
     
 
@@ -37,9 +37,9 @@ class TextDataModel {
         $this->form = new FH();
     }
     
-    public function setRespFormatToDict($separateKeys = false) {
+    public function setRespFormatToDict($idToKeys = false) {
         $this->convertToDict = true;
-        if ($separateKeys) $this->convertProps['separateKeys'] = true;
+        if ($idToKeys) $this->convertProps['idToKeys'] = true;
     }
 
     public function setDependencies(array $dependencies) {
@@ -86,13 +86,13 @@ class TextDataModel {
     }
 
 
-    public function add($info)
+    public function add($info, $surce="user")
     {        
         if (!$info ) {
             throw new TextDataModelException("Не корректные данные для add.");
         }
         
-        $info = $this->checkValueBySchem($info);
+        $info = $this->schem->checkValueBySchem($info, $surce);
         $newId = $this->data->add($info);
 
         if ($newId) {
@@ -105,14 +105,14 @@ class TextDataModel {
 
     
 
-    public function upd($id, $info, $checkLinks=true)
+    public function upd($id, $info, $surce="user", $checkLinks=true)
     {   
         $lastInfo = $this->get($id);
 
         if (!$info ) {
             throw new TextDataModelException("Не корректные данные для upd.");
         }
-        $info = $this->checkValueBySchem($info);        
+        $info = $this->schem->checkValueBySchem($info, $surce);        
 
         if ($this->data->upd($id, $info)){
             if ($checkLinks){
@@ -286,48 +286,6 @@ class TextDataModel {
         return $data;
     }
 
-
-
-    // Проверить, перенести в schem
-    public function checkValueBySchem($info)
-    {
-        $result = [];
-        $schemFields = array_column($this->schem->getSchem(), 3);
-        $schemNames = array_column($this->schem->getSchem(), 2);
-
-        foreach ($info as $infoId => $value) {
-            if (!in_array($infoId, $schemFields) and !in_array($infoId, $schemNames)) {
-                //return "Ошибка: Поле '$colId' не найдено в схеме.";
-                //throw new TextDataModelException("Ошибка: Поле '$colId' не найдено в схеме.");
-                $this->schem->addCol($infoId);
-                if (is_numeric($infoId)){
-                    $schemFields[] = $infoId;
-                } else {
-                    $schemNames[] = $infoId;
-                }
-                
-            }
-        }
-
-        foreach ($this->schem->getSchem() as $sId => $sInfo) {
-            $type = $sInfo[6];
-            $colName = $sInfo[2];
-            $colId = $sInfo[3];
-            $cureVal = '';
-            if (isset($info[$colName])) $cureVal = $info[$colName];
-            if (isset($info[$colId])) $cureVal = $info[$colId];
-
-            // Если link, arra, file
-            if (in_array($type, $this->schem->linkTypes)) {
-                if (!is_array($cureVal)) $cureVal = [$cureVal];
-                $cureVal = array_diff($cureVal, [""]);
-            }
-
-            $result[$colId] = $cureVal;
-        }
-
-        return $result;
-    }
 
 
     

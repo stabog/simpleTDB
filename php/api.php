@@ -9,10 +9,13 @@ require_once "php/Core/SimpleTdb/TextDataModelException.php";
 require_once "php/Core/SimpleTdb/TextDataSchem.php";
 require_once "php/Core/SimpleTdb/FormHelpers.php";
 
+require_once "php/Core/SimpleTdb/TextDataModelUploads.php";
 
 use SimpleTdb\TextDataBase as TDB;
 use SimpleTdb\TextDataModel as TDM;
 use SimpleTdb\TextDataModelException;
+
+use SimpleTdb\TextDataModelUploads as TDU;
 
 const FDB_PATH = 'db';
 const SITE_NAME = 'simpleTDB';
@@ -37,26 +40,33 @@ $root = TDB::getInstance('root', FDB_PATH);
 header('Content-Type: application/json');
 
 if (!isset($links[1])) {
-    echo json_encode(['error' => 'ID приложения не указано']);
+    echo json_encode(['error' => 'ID приложения не указано'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 if (!isset($links[2])) {
-    echo json_encode(['error' => 'ID базы данных не указано']);
+    echo json_encode(['error' => 'ID базы данных не указано'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 if (!isset($act)) {
-    echo json_encode(['error' => 'Action не указан']);
+    echo json_encode(['error' => 'Action не указан'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
 $appName = $links[1];
 $baseName = $links[2];
 $dbPath = 'apps/'.$appName.'/db';
-$model = new TDM($baseName, $dbPath, 'guid');
+if ($baseName == 'uploads'){
+    $model = new TDU($baseName, $dbPath, 'guid');
+} else {
+    $model = new TDM($baseName, $dbPath, 'guid');
+}
+
+$uploads = new TDU('uploads', $dbPath, 'guid');
+
 $model->setRespFormatToDict(
-    $separateKeys = true,
+    $idToKeys = true,
 );
 
 $id = $id ?? null;
@@ -67,6 +77,7 @@ $data['item'] = (isset($data['item']) && is_array($data['item']))? $data['item']
 
 $nonCriticalErrors = [];
 $result = false;
+
 
 try {
     switch ($act) {
@@ -93,8 +104,16 @@ try {
             $result["sucess"] = $model->del($id);
             break;
 
+
+        //Схема
         case 'getSchem':            
             $result["schem"] = $model->getSchem();
+            $result["sucess"] = true;
+            break;
+        
+        //Файлы
+        case 'upload':            
+            $result["item_id"] = $uploads->upload();
             $result["sucess"] = true;
             break;
 
@@ -108,7 +127,7 @@ try {
 
 if (isset($result['error']) or !$result["sucess"]) {
     $error_text = $result['error'] ?? 'Произошла ошибка при выполнения действия';
-    echo json_encode(['error' => $error_text]);
+    echo json_encode(['error' => $error_text], JSON_UNESCAPED_UNICODE);
 } else {
-    echo json_encode($result);
+    echo json_encode($result, JSON_UNESCAPED_UNICODE);
 } 

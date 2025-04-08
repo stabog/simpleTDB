@@ -1,0 +1,119 @@
+<!DOCTYPE HTML>
+<html>
+<head>
+    <title>Загрузка файлов</title>
+
+    <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
+    <meta name="description" content="Форма для загрузки файлов">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+
+    <link rel="icon" href="/img/favicon.png">
+
+    <!-- Required -->
+    <script src="/js/jquery.min.js"></script>
+
+    <!-- Semantic UI -->
+    <link rel="stylesheet" type="text/css" href="/vendor/fomantic/ui/dist/semantic.min.css">
+    <script src="/vendor/fomantic/ui/dist/semantic.min.js"></script>
+
+    <!-- Highlight.js for JSON formatting -->
+    <link rel="stylesheet" href="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/styles/default.min.css">
+    <script src="//cdnjs.cloudflare.com/ajax/libs/highlight.js/11.5.1/highlight.min.js"></script>
+    <script>hljs.highlightAll();</script>
+
+    <link rel="stylesheet" type="text/css" href="/css/style.css?v=24-06-22">
+</head>
+<body>
+
+<!-- Форма для загрузки файлов -->
+<div class="ui container">
+    <h2 class="ui header">Форма для загрузки файлов</h2>
+    <form id="uploadForm" class="ui form" enctype="multipart/form-data">
+        <div class="field">
+            <label>ID приложения</label>
+            <input type="text" name="app_id" placeholder="Введите ID приложения" value="testApp">
+        </div>
+        <div class="field">
+            <label>ID базы данных</label>
+            <input type="text" name="db_id" placeholder="Введите ID базы данных" value="uploads">
+        </div>
+        <div class="field">
+            <label>Файл</label>
+            <input type="file" name="file" id="fileInput">
+        </div>
+        <button class="ui button" type="submit">Загрузить файл</button>
+    </form>
+    <div id="response" class="ui segment"></div>
+</div>
+
+<script type="text/javascript" charset="utf-8">
+
+$('.ui.checkbox').checkbox();
+$('#progress-bar').progress();
+
+$('.message .close')
+  .on('click', function() {
+    $(this)
+      .closest('.message')
+      .transition('fade')
+    ;
+  });
+
+$('.menu .item')
+  .tab();
+
+$('.ui.dropdown')
+  .dropdown();
+
+// Обработка формы для загрузки файлов
+document.getElementById('uploadForm').addEventListener('submit', function(event) {
+    event.preventDefault();
+
+    let form = event.target;
+    let formData = new FormData(form);
+    let app_id = formData.get('app_id');
+    let db_id = formData.get('db_id');
+
+    let url = `/api/${app_id}/${db_id}/?act=upload`;
+
+    let options = {
+        method: 'POST',
+        body: formData
+    };
+
+    fetch(url, options)
+    .then(response => {
+            const contentType = response.headers.get('content-type');
+            if (contentType && contentType.includes('application/json')) {
+                return response.json();
+            } else {
+                return response.text();
+            }
+        })
+        .then(data => {
+            if (typeof data === 'object') {
+                document.getElementById('response').innerHTML = `<pre><code class="json">${JSON.stringify(data, null, 2)}</code></pre>`;
+                hljs.highlightAll();
+            } else {
+                // Удаляем HTML-теги из текста
+                let cleanText = data.replace(/<[^>]*>/g, '');
+                document.getElementById('response').innerText = cleanText;
+            }
+        })
+        .catch(error => {
+            // Выводим полный ответ, если произошла ошибка
+            fetch(url, options)
+                .then(response => response.text())
+                .then(fullResponse => {
+                    document.getElementById('response').innerText = 'Ошибка: ' + fullResponse;
+                })
+                .catch(err => {
+                    document.getElementById('response').innerText = 'Ошибка: ' + err;
+                });
+        });
+});
+
+</script>
+
+</body>
+</html> 
