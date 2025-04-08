@@ -7,9 +7,14 @@ require_once "php/Core/SimpleTdb/TextDataBase.php";
 require_once "php/Core/SimpleTdb/TextDataModel.php";
 require_once "php/Core/SimpleTdb/TextDataModelException.php";
 require_once "php/Core/SimpleTdb/TextDataSchem.php";
-require_once "php/Core/SimpleTdb/FormHelpers.php";
 
 require_once "php/Core/SimpleTdb/TextDataModelUploads.php";
+
+
+use Dotenv\Dotenv;
+$dotenv = Dotenv::createImmutable(__DIR__ . '/../');
+$dotenv->load();
+
 
 use SimpleTdb\TextDataBase as TDB;
 use SimpleTdb\TextDataModel as TDM;

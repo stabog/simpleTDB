@@ -1,9 +1,15 @@
 <?php
 
+
 class YoutubeHelper {   
 
     protected $link = 'https://www.googleapis.com/youtube/v3/';
-    protected $apk = 'AIzaSyCqFQEqB9ewlPyoQw6mTLsKPhyDl-soh80';
+    protected $apk;
+
+    public function __construct() {
+        //ENV from Dotenv
+        $this->apk = $_ENV['YOUTUBE_API_KEY'];
+    }
 
     protected $listPattern = '/(?:https?:\/\/)?(?:www\.)?(?:youtube\.com|youtu\.?be)\/(?:playlist\?list=|watch\?v=[^&]*&list=)([a-zA-Z0-9_-]+)/i';
     protected $videoPattern = '%(?:youtube(?:-nocookie)?\.com/(?:[^/]+/.+/|(?:v|e(?:mbed)?)/|.*[?&]v=)|youtu\.be/)([^"&?/\s]{11})%i';

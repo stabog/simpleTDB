@@ -2,8 +2,20 @@
 
 namespace SimpleTdb;
 
-class TextDataModelException extends \Exception {
-    public function __construct($message, $code = 0, \Exception $previous = null) {
+/**
+ * Custom exception class for TextDataModel errors
+ */
+class TextDataModelException extends \Exception 
+{
+    /**
+     * Constructor
+     * 
+     * @param string $message Error message
+     * @param int $code Error code
+     * @param \Throwable|null $previous Previous exception
+     */
+    public function __construct(string $message, int $code = 0, ?\Throwable $previous = null) 
+    {
         parent::__construct($message, $code, $previous);
     }
-} 
+}

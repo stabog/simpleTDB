@@ -5,7 +5,6 @@ namespace SimpleTdb;
 
 use SimpleTdb\TextDataBase as TDB;
 use SimpleTdb\TextDataSchem as TDS;
-use SimpleTdb\FormHelpers as FH;
 use SimpleTdb\TextDataModelException;
 
 class TextDataModel {
@@ -34,7 +33,6 @@ class TextDataModel {
 
         $this->data = TDB::getInstance($this->dbName, $this->dbPath, $this->indexType);
         $this->schem = new TDS($this->dbName, $this->dbPath, $this->schemItems);
-        $this->form = new FH();
     }
     
     public function setRespFormatToDict($idToKeys = false) {
