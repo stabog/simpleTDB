@@ -434,7 +434,7 @@ class TextDataSchem
 
 
     public function convertListItemsToDict ($items, $props=[])
-    {
+    {        
         $result = [];
         foreach ($items as $itemId=> $itemInfo) {
             $convertedItem = $this->convertListItemToDict ($itemInfo, $props);
@@ -464,9 +464,17 @@ class TextDataSchem
             $type = $sInfo[6];
             $colName = $sId;
             $colId = $sInfo[2];
+
+            if ($sId === 'passHash') {
+                if (isset($props["showHash"])) continue;
+                //echo $item[$colId];
+            }
+
             $cureVal = '';
             //Получаем инфо по colId
             if (isset($item[$colId])) $cureVal = $item[$colId];
+
+            
 
             // Если link, arra, file
             if (in_array($type, $this->linkTypes)) {

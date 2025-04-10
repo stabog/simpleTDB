@@ -14,9 +14,11 @@ $content = [
 $html = '';
 
 if (!isset($links[0])){
+    echo '';
+} else if ($links[0] == "adm_form"){
     include 'views/index.html';
-} else if ($links[0] == "upload"){
+} else if ($links[0] == "adm_upload"){
     include 'views/upload.html';
 } else {
-    
+    echo '';
 }

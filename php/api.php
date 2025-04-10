@@ -8,8 +8,10 @@ require_once "php/Core/SimpleTdb/TextDataModel.php";
 require_once "php/Core/SimpleTdb/TextDataModelException.php";
 require_once "php/Core/SimpleTdb/TextDataSchem.php";
 
+require_once "php/Core/SimpleTdb/TextDataAuth.php";
 require_once "php/Core/SimpleTdb/TextDataModelUploads.php";
-
+require_once "php/Core/SimpleTdb/TextDataModelUsers.php";
+require_once "php/Core/SimpleTdb/TextDataModelSessions.php";
 
 use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
@@ -19,8 +21,10 @@ $dotenv->load();
 use SimpleTdb\TextDataBase as TDB;
 use SimpleTdb\TextDataModel as TDM;
 use SimpleTdb\TextDataModelException;
+use SimpleTdb\TextDataAuth;
 
-use SimpleTdb\TextDataModelUploads as TDU;
+use SimpleTdb\TextDataModelUploads as TDUploads;
+use SimpleTdb\TextDataModelUsers as TDUsers;
 
 const FDB_PATH = 'db';
 const SITE_NAME = 'simpleTDB';
@@ -34,13 +38,16 @@ if (isset($_COOKIE)) {foreach ($_COOKIE as $key => $val) {$$key = $val;}}
 
 
 
-$root = TDB::getInstance('root', FDB_PATH);
+//$root = TDB::getInstance('root', FDB_PATH);
 //$model->add([3, "", "test", "test 1"]);
 //$model->upd(4, [3, "", "test", "test 123"]);
 
 //print_r($links);
 
 
+header('Access-Control-Allow-Origin: *');
+header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
+header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
 header('Content-Type: application/json');
 
@@ -62,17 +69,33 @@ if (!isset($act)) {
 $appName = $links[1];
 $baseName = $links[2];
 $dbPath = 'apps/'.$appName.'/db';
-if ($baseName == 'uploads'){
-    $model = new TDU($baseName, $dbPath, 'guid');
-} else {
-    $model = new TDM($baseName, $dbPath, 'guid');
+
+switch ($baseName) {
+    case 'uploads':
+        $model = new TDUploads($baseName, $dbPath, 'guid');
+        break;
+    case 'users':
+        $model = new TDUsers($baseName, $dbPath, 'guid');
+        break;
+    case 'auth':
+        $model = new TextDataAuth($dbPath);
+        break;
+    default:
+        $model = new TDM($baseName, $dbPath, 'guid');
+        break;
 }
 
-$uploads = new TDU('uploads', $dbPath, 'guid');
+$uploads = new TDUploads('uploads', $dbPath, 'guid');
+$users = new TDUsers('users', $dbPath, 'guid');
+$auth = new TextDataAuth($dbPath);
 
-$model->setRespFormatToDict(
-    $idToKeys = true,
-);
+
+if ($baseName != 'auth'){
+    $model->setRespFormatToDict([
+        "idToKeys" => false,
+    ]);
+}
+
 
 $id = $id ?? null;
 $input = file_get_contents('php://input');
@@ -119,6 +142,31 @@ try {
         //Файлы
         case 'upload':            
             $result["item_id"] = $uploads->upload();
+            $result["sucess"] = true;
+            break;
+
+        //Пользователь
+        case 'reg':            
+            $result["item_id"] = $auth->register($data['item']);
+            $result["sucess"] = true;
+            break;
+        
+        case 'signIn':            
+            $result["session_id"] = $auth->signin($data['item']);
+            $result["sucess"] = true;
+            break;
+
+        case 'getSess':            
+            $result["item_id"] = $auth->getSession($id);
+            $result["sucess"] = true;
+            break;
+
+        case 'signOut':            
+            $result["sucess"] = $auth->signout($id);
+            break;
+
+        case 'getUserIdByEmail':            
+            $result["item_id"] = $users->getUserIdByEmail($id);
             $result["sucess"] = true;
             break;
 

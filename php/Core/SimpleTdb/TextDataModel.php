@@ -35,9 +35,11 @@ class TextDataModel {
         $this->schem = new TDS($this->dbName, $this->dbPath, $this->schemItems);
     }
     
-    public function setRespFormatToDict($idToKeys = false) {
+    public function setRespFormatToDict(array $props=[]) {
         $this->convertToDict = true;
-        if ($idToKeys) $this->convertProps['idToKeys'] = true;
+        foreach ($props as $key => $value ){
+            if ($value) $this->convertProps[$key] = $value;
+        }
     }
 
     public function setDependencies(array $dependencies) {
@@ -57,7 +59,7 @@ class TextDataModel {
 
     public function all($filters = [])
     {        
-        $data = $this->data->all($filters);
+        $data = $this->data->all();
         if ($this->convertToDict){
             $data = $this->schem->convertListItemsToDict($data, $this->convertProps);
         }

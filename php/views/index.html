@@ -55,6 +55,12 @@ echo $html;
                 <option value="upd">UPDATE</option>
                 <option value="del">DELETE</option>
                 <option value="getSchem">GET SCHEM</option>
+                <option value="reg">REG USER</option>
+                <option value="signIn">SIGN USER</option>
+                <option value="getSess">GET SESS</option>
+                <option value="signOut">DEL SESS</option>
+                <option value="getUserIdByEmail">GET USER_ID BY EMAIL</option>
+                
             </select>
         </div>
         <div class="field" id="dataField" style="display: none;">
@@ -144,7 +150,7 @@ document.getElementById('apiForm').addEventListener('submit', function(event) {
         }
     };
 
-    if (act === 'add' || act === 'upd') {
+    if (act === 'add' || act === 'upd' || act === 'reg' || act === 'signin') {
         options.body = JSON.stringify({ item: data });
     }
 
@@ -220,7 +226,7 @@ document.querySelectorAll('.removeField').forEach(button => {
 document.getElementById('actDropdown').addEventListener('change', function() {
     let act = this.value;
     let dataField = document.getElementById('dataField');
-    if (act === 'add' || act === 'upd') {
+    if (act === 'add' || act === 'upd' || act === 'reg' || act === 'signin') {
         dataField.style.display = 'block';
     } else {
         dataField.style.display = 'none';
