@@ -7,13 +7,13 @@ use SimpleTdb\TextDataModel;
 class TextDataModelUsers extends TextDataModel
 {
     protected $schemItems = [
-        'id' => ['id', [], 0, 'Id колонки', true, true, 'text', '', '', [], [], []],
-        'ausData' => ['ausData', [], 1, 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
-        'email' => ['email', [], 2, 'Email', true, true, 'text', '', '', [], [], []],
-        'passHash' => ['passHash', [], 3, 'Хэш Пароля', true, false, 'text', '', '', [], [], []],
-        'name' => ['name', [], 4, 'ФИО пользоваталя', true, false, 'list', '', '', [], [], []],
-        'role' => ['role', [], 5, 'Роль пользователя', true, false, 'numb', '', '', [], [], []],
-        'status' => ['role', [], 6, 'Статус пользователя', true, false, 'numb', '', '', [], [], []],
+        0 => [0, [], 'id', 'Id колонки', true, true, 'text', '', '', [], [], []],
+        1 => [1, [], 'ausData', 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
+        2 => [2, [], 'email', 'Email', true, true, 'text', '', '', [], [], []],
+        3 => [3, [], 'passHash', 'Хэш Пароля', true, false, 'text', '', '', [], [], []],
+        4 => [4, [], 'name', 'ФИО пользоваталя', true, false, 'list', '', '', [], [], []],
+        5 => [5, [], 'role', 'Роль пользователя', true, false, 'numb', '', '', [], [], []],
+        6 => [6, [], 'status', 'Статус пользователя', true, false, 'numb', '', '', [], [], []],
     ];
 
     public function __construct(string $dbName = 'users', string $dbPath = '', string $indexType = 'guid')
@@ -68,7 +68,7 @@ class TextDataModelUsers extends TextDataModel
         $newId = $this->data->add($info);
 
         if ($newId) {
-            $this->updateLinkedBasesNew($newId, $info);
+            //$this->updateLinkedBasesNew($newId, $info);
             return $newId;
         }
         

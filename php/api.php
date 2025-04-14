@@ -9,6 +9,7 @@ require_once "php/Core/SimpleTdb/TextDataModelException.php";
 require_once "php/Core/SimpleTdb/TextDataSchem.php";
 
 require_once "php/Core/SimpleTdb/TextDataAuth.php";
+require_once "php/Core/SimpleTdb/TextDataModelRoot.php";
 require_once "php/Core/SimpleTdb/TextDataModelUploads.php";
 require_once "php/Core/SimpleTdb/TextDataModelUsers.php";
 require_once "php/Core/SimpleTdb/TextDataModelSessions.php";
@@ -23,6 +24,7 @@ use SimpleTdb\TextDataModel as TDM;
 use SimpleTdb\TextDataModelException;
 use SimpleTdb\TextDataAuth;
 
+use SimpleTdb\TextDataModelRoot as TDRoot;
 use SimpleTdb\TextDataModelUploads as TDUploads;
 use SimpleTdb\TextDataModelUsers as TDUsers;
 
@@ -49,28 +51,39 @@ header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
 
+if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
+    // Ответ на preflight-запрос
+    header('HTTP/1.1 204 No Content');
+    exit;
+}
+
 header('Content-Type: application/json');
+
+
 
 if (!isset($links[1])) {
     echo json_encode(['error' => 'ID приложения не указано'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
+
 if (!isset($links[2])) {
     echo json_encode(['error' => 'ID базы данных не указано'], JSON_UNESCAPED_UNICODE);
     exit;
 }
 
-if (!isset($act)) {
-    echo json_encode(['error' => 'Action не указан'], JSON_UNESCAPED_UNICODE);
-    exit;
-}
+
+
 
 $appName = $links[1];
 $baseName = $links[2];
 $dbPath = 'apps/'.$appName.'/db';
 
+
 switch ($baseName) {
+    case 'root':
+        $model = new TDRoot($baseName, $dbPath, 'num');
+        break;
     case 'uploads':
         $model = new TDUploads($baseName, $dbPath, 'guid');
         break;
@@ -85,8 +98,8 @@ switch ($baseName) {
         break;
 }
 
-$uploads = new TDUploads('uploads', $dbPath, 'guid');
-$users = new TDUsers('users', $dbPath, 'guid');
+//$uploads = new TDUploads('uploads', $dbPath, 'guid');
+//$users = new TDUsers('users', $dbPath, 'guid');
 $auth = new TextDataAuth($dbPath);
 
 
@@ -111,63 +124,68 @@ try {
     switch ($act) {
         case 'get':            
             $result["item"] = $model->get($id);
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         case 'all':            
             $result["items"] = $model->all();
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         case 'add':
             $result["item_id"] = $model->add($data['item']);
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         case 'upd':
-            $result["sucess"] = $model->upd($id, $data['item']);
+            $result["success"] = $model->upd($id, $data['item']);
             break;
 
         case 'del':
-            $result["sucess"] = $model->del($id);
+            $result["success"] = $model->del($id);
             break;
 
 
         //Схема
         case 'getSchem':            
             $result["schem"] = $model->getSchem();
-            $result["sucess"] = true;
+            $result["success"] = true;
+            break;
+
+        case 'updSchem':            
+            $result["items"] = $model->saveSchem($data);
+            $result["success"] = true;
             break;
         
         //Файлы
         case 'upload':            
             $result["item_id"] = $uploads->upload();
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         //Пользователь
         case 'reg':            
             $result["item_id"] = $auth->register($data['item']);
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
         
         case 'signIn':            
             $result["session_id"] = $auth->signin($data['item']);
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         case 'getSess':            
             $result["item_id"] = $auth->getSession($id);
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         case 'signOut':            
-            $result["sucess"] = $auth->signout($id);
+            $result["success"] = $auth->signout($id);
             break;
 
         case 'getUserIdByEmail':            
             $result["item_id"] = $users->getUserIdByEmail($id);
-            $result["sucess"] = true;
+            $result["success"] = true;
             break;
 
         default:
@@ -178,9 +196,10 @@ try {
     $result['error'] = $e->getMessage();
 }
 
-if (isset($result['error']) or !$result["sucess"]) {
+if (isset($result['error']) or !$result["success"]) {
     $error_text = $result['error'] ?? 'Произошла ошибка при выполнения действия';
     echo json_encode(['error' => $error_text], JSON_UNESCAPED_UNICODE);
 } else {
     echo json_encode($result, JSON_UNESCAPED_UNICODE);
-} 
+}
+

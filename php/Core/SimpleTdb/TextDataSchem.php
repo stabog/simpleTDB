@@ -3,6 +3,7 @@
 namespace SimpleTdb;
 
 use SimpleTdb\TextDataBase as TDB;
+use SimpleTdb\TextDataModel as TDM;
 use SimpleTdb\TextDataModelException;
 
 /*
@@ -40,6 +41,7 @@ dataSubType [numb] = [
 class TextDataSchem
 {
     protected $modelName;
+    protected $modelPath;
     protected $modelSchem;
     protected $lastInc = 0;
 
@@ -97,18 +99,18 @@ class TextDataSchem
 
 
     protected $schemItems = [
-        'id' => ['id', [], 0, 'Id колонки', false, true, 'text', '', '', [], [], []],
-        'ausData' => ['ausData', [], 1, 'Информация о создании/редактировании', true, false, 'list', '', '', [], [], []],
-        'inc' => ['inc', [], 2, 'Инкремент для базы', true, false, 'numb', '', '', [], [], []],
-        'title' => ['title', [], 3, 'Имя колонки', false, false, 'text', '', '', [], [], []],
-        'isSystem' => ['isSystem', [], 4, 'Колонка является системной', true, false, 'bool', '', '', [], [], []],
-        'isUnic' => ['isUnic', [], 5, 'Значение должно быть уникальным', false, false, 'bool', '', '', [], [], []],
-        'dataType' => ['dataType', [], 6, 'Тип данных', false, false, 'text', '', '', [], [], []],
-        'dataSubType' => ['dataSubType', [], 7, 'Подтип данных', false, false, 'numb', '', '', [], [], []],
-        'parentId' => ['parentId', [], 8, 'Id родительского элемента', false, false, 'text', '', '', [], [], []],
-        'items' => ['items', [], 9, 'Текущие элементы для выбора', false, false, 'dict', '', '', [], [], []],
-        'fieldInfo' => ['fieldInfo', [], 10, 'Настройки поля для формы', false, false, 'list', '', '', [], [], []],
-        'linkProps' => ['linkProps', [], 11, 'Настройки для связи', false, false, 'list', '', '', [], [], []],
+        0  => [0, [], 'id', 'Id колонки', false, true, 'text', '', '', [], [], []],
+        1  => [1, [], 'ausData', 'Информация о создании/редактировании', true, false, 'list', '', '', [], [], []],
+        2  => [2, [], 'tag', 'Тэг колонки', true, false, 'numb', '', '', [], [], []],
+        3  => [3, [], 'title', 'Имя колонки', false, false, 'text', '', '', [], [], []],
+        4  => [4, [], 'isSystem', 'Колонка является системной', true, false, 'bool', '', '', [], [], []],
+        5  => [5, [], 'isUnic', 'Значение должно быть уникальным', false, false, 'bool', '', '', [], [], []],
+        6  => [6, [], 'dataType', 'Тип данных', false, false, 'text', '', '', [], [], []],
+        7  => [7, [], 'dataSubType', 'Подтип данных', false, false, 'numb', '', '', [], [], []],
+        8  => [8, [], 'parentId', 'Id родительского элемента', false, false, 'text', '', '', [], [], []],
+        9  => [9, [], 'items', 'Текущие элементы для выбора', false, false, 'list', '', '', [], [], []],
+        10 => [10, [], 'fieldInfo', 'Настройки поля для формы', false, false, 'list', '', '', [], [], []],
+        11 => [11, [], 'linkProps', 'Настройки для связи', false, false, 'list', '', '', [], [], []],
         
     ]; 
 
@@ -179,25 +181,30 @@ class TextDataSchem
     public array $linkTypes = ['link', 'file'];
     public array $linkedFields = [];
 
-    public $arrayTypes = ['arra', 'file', 'link', 'list'];
+    public $arrayTypes = ['list', 'dict', 'file', 'link'];
     
 
     public function __construct($modelName, $modelPath, $modelSchem)
     {
         $this->modelName = $modelName;
+        $this->modelPath = $modelPath;
         $this->modelSchem = $modelSchem;
 
         $schemDbName = $this->modelName.'_schem';
-        $this->data = TDB::getInstance($schemDbName, $modelPath, "str");        
+        $this->data = TDB::getInstance($schemDbName, $modelPath);
         
         //Обновляем информацию о схеме из модели в БД
         if (count ($this->modelSchem) > 0){
+            
             foreach ($this->modelSchem as $id => $info){
                 if (!$this->data->get($id)){
                     $this->data->add($info, $id);                    
                 }                
             }
         }
+        
+
+        /*
 
         //Получаем последний инкремент
         $this->lastInc = $this->getIncrement ();
@@ -208,9 +215,12 @@ class TextDataSchem
                 $this->linkedFields[$id] = $info;
             }
         }
+        */
         
     }
 
+
+    /*
     public function setModels ($models)
     {
         $this->models = $models;
@@ -219,25 +229,70 @@ class TextDataSchem
     public function getModels ()
     {
         return $this->models;
-    }    
+    }
+    */
 
 
-    public function getSchem ($viewType='')
+    public function getSchem ($newType="data")
     {
-        $result =  $this->data->all();
+        $items =  $this->data->all();
+        $schem = $this->schemItems;
 
-        if ($viewType == 'form') {
-            foreach ($result as $sId => $sInfo){
-                $schemType = $sInfo[6];
-                if ($schemType == 'link' or $schemType == 'file'){
-                    
-                    $result[$sId][17] = $this->getVariantsLinks ($sInfo);
-                }
-            }
+        $convertedItems = $this->validateAndConvertItems ($items, $schem, "data", $newType);       
+
+        return $convertedItems;
+    }
+
+    
+
+    public function validateAndConvertItems ($items, $schem, $cureType="data", $newType="data")
+    {
+        $result = [];
+        foreach ($items as $itemId => $itemInfo){
+            $checkedItem = $this->validateAndConvertItemValues ($itemInfo, $schem, $cureType, $newType);
+            //$result[$itemId] = $checkedItem;
+            $result[] = $checkedItem;
         }
-
         return $result;
     }
+
+    public function validateAndConvertItemValues ($itemInfo, $schem, $cureType="data", $newType="data")
+    {
+        $result = [];
+        foreach ($schem as $sId => $sInfo){
+            $dataId = $sId;
+            $dataTag = $sInfo[2];
+            $dataType = $sInfo[6];
+
+            if ($cureType =="data"){
+                $cureKey = $dataId;                
+            } else if ($cureType =="dict"){
+                $cureKey = $dataTag;
+            }
+
+            //Пропускаем элементы, которых нет в $itemInfo
+            if (!isset($itemInfo[$cureKey])) continue;
+
+            $cureVal  = $itemInfo[$cureKey];
+            
+
+            if ($dataType == "bool"){
+                $cureVal = ($cureVal != "")? "1" : "";
+            }
+
+            if (in_array($dataType, $this->arrayTypes)){
+                $cureVal = $this->convertToArray($cureVal);
+            }
+            
+            if ($newType === 'data') $returnKey = $dataId;
+            if ($newType === 'dict') $returnKey = $dataTag;
+            $result[$returnKey] = $cureVal;
+        }
+        return $result;
+    }
+    
+
+    /*
 
     public function getlinkedFields ()
     {
@@ -280,6 +335,7 @@ class TextDataSchem
 
         return $result;
     }
+    
 
     protected function getSchemCols ($sInfo, $cureModelSchem)
     {
@@ -305,21 +361,11 @@ class TextDataSchem
         }
         return $lastInc;
     }
+    */
 
 
-
-    public function addCol ($name, $info=[])
+    public function addCol ($info, $id, $checkLinks = false)
     {
-
-        $tag = $this->convertToValidVariableName($name);
-
-
-        //Проверка на существование поля с таким именем
-        if (isset($this->data->all()[$tag])){
-            $_SESSION["message"][] = ['war', 'Колонка с именем ['.$tag.'] уже существует.'];
-            return $tag;
-        }
-
         /*
         'id' => ['id', [], 0, 'Id колонки', false, true, 'text', '', '', [], [], []],
         'ausData' => ['ausData', [], 1, 'Информация о создании/редактировании', true, false, 'list', '', '', [], [], []],
@@ -334,24 +380,51 @@ class TextDataSchem
         'fieldInfo' => ['fieldInfo', [], 10, 'Настройки поля для формы', false, false, 'list', '', '', [], [], []],
         'linkProps' => ['linkProps', [], 11, 'Настройки для связи', false, false, 'list', '', '', [], [], []],
         */
+
+        $checkedId = $this->convertToValidVariableName($id);
+        
+        //Проверка на существование поля с таким именем
+        if (isset($this->data->all()[$checkedId])){
+            if (!$checkLinks){
+                $_SESSION["message"][] = ['war', 'Колонка с именем ['.$checkedId.'] уже существует.'];
+                return $checkedId;
+            }
+            $checkedId .= rand(1000, 9999);
+
+        }
+
+        $title        = isset($info[3])  ? $info[3] : $id;
+        $isSystem     = isset($info[4])  ? $info[4] : false;
+        $isUnic       = isset($info[5])  ? $info[5] : false;
+        $dataType     = isset($info[6])  ? $info[6] : 'text';
+        $dataSubtype  = isset($info[7])  ? $info[7] : '';        
+        $parentId     = isset($info[8])  ? $info[8] : '';
+        $items        = isset($info[9])  ? $info[9] : [];
+        $fieldInfo    = isset($info[10]) ? $info[10] : [];
+        $linkProps    = isset($info[11]) ? $info[11] : [];
         
         $this->lastInc ++;
         $tobase = [
-            0 => $tag, //id
+            0 => $checkedId, //id
             1 => [], //system            
             2 => $this->lastInc, //increment
-            3 => $name, //Title
-            4 => false, //isSystem
-            5 => false, //isUnic
-            6 => $info[6] ?? 'text', //dataType
-            7 => '',   //dataSubtype
-            8 => '',   //parentId
-            9 => [],   //items
-            10 => [],   //fieldInfo
-            11 => $info[11] ?? [], //linkProps
+            3 => $title, //Title
+            4 => $isSystem, //isSystem
+            5 => $isUnic, //isUnic
+            6 => $dataType, //dataType
+            7 => $dataSubtype,   //dataSubtype
+            8 => $parentId,   //parentId
+            9 => $items,   //items
+            10 => $fieldInfo,   //fieldInfo
+            11 => $linkProps, //linkProps
         ];
-        $colId = $this->data->add($tobase, $tag);
+        $colId = $this->data->add($tobase, $checkedId);
         return $colId;
+    }
+
+    public function updCol ($id, $info)
+    {
+        return $this->data->upd($id, $info);
     }
 
     public function delCol ($id)
@@ -382,28 +455,50 @@ class TextDataSchem
     }
 
 
-    
+    public function checkItemsBySchem($items, $props)
+    {
+        $result = [];
+        foreach ($items as $itemInfo){
+            if (!isset($itemInfo["id"])) continue;
+
+            $itemId = $itemInfo["id"];
+            $result[$itemId] = $this->checkValueBySchem($itemInfo, $props);
+        }
+        return $result;
+    }
 
 
     // Проверяем значения по схеме, дополняем схему
-    public function checkValueBySchem($info, $surce="user")
+    //public function checkValueBySchem($info, $surce="user")
+    public function checkValueBySchem($info, $props)
     {
         $result = [];
-        $schemNames = array_column($this->getSchem(), 0);
-        
-        $processedInfo = [];
-        foreach ($info as $infoId => $value) {
-            $colName = $infoId;
-            if (!in_array($infoId, $schemNames) and $value != '') {
-                $colName = $this->addCol($infoId);                
-            }
-            $processedInfo[$colName] = $value;
-        }
 
-        foreach ($this->getSchem() as $sId => $sInfo) {
+        if (isset($props["isSchem"])){
+            $schem = $this->schemItems;            
+            $processedInfo = $info;
+            
+        } else {
+            $schem = $this->getSchem();
+
+            //Добавление колонок
+            $schemNames = array_column($schem, 0);
+            $processedInfo = [];
+            foreach ($info as $infoId => $value) {
+                $colName = $infoId;
+                if (!in_array($infoId, $schemNames) and $value != '') {
+                    $colName = $this->addCol([], $infoId);                
+                }
+                $processedInfo[$colName] = $value;
+            }
+        }        
+        
+        
+
+        foreach ($schem as $sId => $sInfo) {
             if ($sInfo[4]) {
                 //Пропускаем системную колонку
-                if ($surce == "user") continue;
+                if (!isset($props["converAll"])) continue;
             }
             if ($sInfo[5]) {
                 //Добавить проверку на уникальность
@@ -418,8 +513,13 @@ class TextDataSchem
             }
             //if (isset($info[$colId])) $cureVal = $info[$colId];
 
+            // Если bool
+            if ($type == 'bool') {
+                $cureVal = $cureVal ? "1" : "";
+            }
+
             // Если link, arra, file
-            if (in_array($type, $this->linkTypes)) {
+            if (in_array($type, $this->arrayTypes)) {
                 $cureVal = $this->convertToArray($cureVal);
             }
 
@@ -477,9 +577,8 @@ class TextDataSchem
             
 
             // Если link, arra, file
-            if (in_array($type, $this->linkTypes)) {
-                if (!is_array($cureVal)) $cureVal = [$cureVal];
-                $cureVal = array_diff($cureVal, [""]);
+            if (in_array($type, $this->arrayTypes)) {
+                $cureVal = $this->convertToArray($cureVal);                
             }
 
             //Сохраняем инфо по colName
@@ -505,6 +604,180 @@ class TextDataSchem
         $input = preg_replace('/_+/', '_', $input);
 
         return $input;
+    }
+
+
+    /* Обновление Схемы */
+
+    public function saveSchem ($items)
+    {
+                
+        $toAdd = $toUpd = $toSkip = [];
+        
+
+        //$newItems = $items;
+        //$oldItems = $toDel = $this->getSchem();
+
+        foreach ($items as $sInfo){
+            $inc = $sInfo[2];
+            $newItems [$inc] = $sInfo;
+        }
+
+        foreach ($this->getSchem() as $sInfo){
+            $inc = $sInfo[2];
+            $oldItems [$inc] = $sInfo;
+        }
+
+        $toDel = $oldItems;        
+
+        foreach ($newItems as $inc => $itemInfo){
+            
+            if (!isset($oldItems[$inc])){
+                $toAdd[$inc] = $itemInfo;
+                continue;
+            } else {
+
+                if ($this->isEqual($oldItems[$inc], $itemInfo)){
+                    $toSkip[$inc] = $itemInfo;
+                } else {
+                    $toUpd[$inc] = $itemInfo;
+                }
+
+                unset($toDel[$inc]);
+            }
+            
+        }  
+
+        /*
+
+        foreach ($newItems as $itemId => $itemInfo){    
+            $inc = $sInfo[2];        
+            
+            if (!isset($oldItemsByInc[$inc])){
+                $toAdd[$itemId] = $itemInfo;
+                continue;
+            } else {
+
+                if ($oldItemsByInc[$inc][0] != )
+
+                if ($this->isEqual($oldItemsByInc[$inc], $itemInfo)){
+                    $toSkip[$itemId] = $itemInfo;
+                } else {
+                    $toUpd[$itemId] = $itemInfo;
+                }
+
+                unset($toDel[$itemId]);
+            }
+            
+        }     
+        */   
+
+        foreach ($toDel as $inc => $info){
+            $id = $info[0];
+            if (in_array($info[6], ["link", "file"])){
+                $info = $this->checkSchemLink([], $oldItems[$inc], $this->modelName);                
+            }
+            $this->delCol ($id);
+        }
+
+        foreach ($toUpd as $inc => $info){
+            $id = $oldItems[$inc][0];
+            if (in_array($info[6], ["link", "file"])){
+                $info = $this->checkSchemLink($info, $oldItems[$inc], $this->modelName);                
+            }
+            
+            $this->updCol ($id, $info);
+        }
+        
+        foreach ($toAdd as $id => $info){
+            $id = $info[0];
+            if (in_array($info[6], ["link", "file"])){
+                $info = $this->checkSchemLink($info, [], $this->modelName);                
+            }
+            
+            $this->addCol ($info, $id);
+        }
+        
+
+        //return [count($toAdd), count($toUpd), count($toDel)];
+        return ["new" => $newItems, "old" => $oldItems, count($toSkip), count($toAdd), count($toUpd), count($toDel)];
+
+    }
+    
+
+    protected function isEqual ($old, $new)
+    {
+        $isEqual = false;
+
+        if (isset($new[1])) unset($new[1]);
+        if (isset($old[1])) unset($old[1]);
+
+        $jsonOld = json_encode($old, JSON_UNESCAPED_UNICODE);
+        $jsonNew = json_encode($new, JSON_UNESCAPED_UNICODE);
+
+        if ($jsonOld === $jsonNew) {
+            $isEqual = true;
+        }
+
+        return $isEqual;
+    }
+
+
+    protected function checkSchemLink($cureInfo, $oldInfo, $cureModel)
+    {        
+        $linkModelName = count($cureInfo) > 0 ? $cureInfo[11][0] :  $oldInfo[11][0];
+        $linkModel = new TDM ($linkModelName, $this->modelPath); 
+        
+        //Если удаляем
+         if (count($cureInfo) == 0){
+            $idToDel = $oldInfo[11][2];
+            $linkModel->schem->delCol($idToDel);
+            return;
+        }
+
+        $cureId = $cureInfo[0];
+        $newColName = $cureModel .'_link';
+        $newColInfo[6] = "link";
+        $newColInfo[11] = [$cureModel, ["id"], $cureId];
+
+        
+
+        //Если добавляем
+        if (count($oldInfo) == 0){
+            $cureInfo[11][2] = $linkModel->schem->addCol($newColInfo, $newColName, true);
+            return $cureInfo;
+        }
+
+       
+
+        //Если редактируем
+        $oldLinkInfo = $oldInfo[11];
+        $oldId = $oldInfo[0];
+        $foundId = false;
+        
+        foreach ($linkModel->getSchem() as $lsId => $lsInfo){
+            $linkInfo = $lsInfo[11];
+
+            if (!in_array($lsInfo[6], $this->linkTypes)) continue;
+            if (!isset($linkInfo[0]) or $linkInfo[0] != $cureModel) continue;
+            if (!isset($linkInfo[2]) or $linkInfo[2] != $oldId) continue;
+            
+            //Если совпадение по cureModel и oldId
+            if ($cureId != $oldId) {
+                //Обновляем ссялку если cureId изменился
+                $linkModel->schem->updCol($lsId, $newColInfo);                
+            } 
+            $foundId = $lsId;
+
+        }
+
+        if (!$foundId){
+            $cureInfo[11][2] = $linkModel->schem->addCol($newColInfo, $newColName, true);            
+        } else {
+            $cureInfo[11][2] = $foundId;
+        }        
+
+        return $cureInfo;
     }
    
 }

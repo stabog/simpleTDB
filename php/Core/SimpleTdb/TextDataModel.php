@@ -20,8 +20,8 @@ class TextDataModel {
     protected $models = [];
 
     protected $schemItems = [
-        'id' => ['id', [], 0, 'Id колонки', true, true, 'text', '', '', [], [], []],
-        'ausData' => ['ausData', [], 1, 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
+        0 => [0, [], 'id', 'Id колонки', true, true, 'text', '', '', [], [], []],
+        1 => [1, [], 'ausData', 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
     ];    
     
 
@@ -42,6 +42,7 @@ class TextDataModel {
         }
     }
 
+    /*
     public function setDependencies(array $dependencies) {
         $this->models = $dependencies;
         $this->schem->setModels($this->models);
@@ -50,6 +51,7 @@ class TextDataModel {
     public function showDependency() {
         return  "Class " . static::class . " has dependencies: " . implode(', ', array_keys($this->models)) . "\n";
     }
+    */
 
 
     public function getDbName ()
@@ -61,7 +63,8 @@ class TextDataModel {
     {        
         $data = $this->data->all();
         if ($this->convertToDict){
-            $data = $this->schem->convertListItemsToDict($data, $this->convertProps);
+            $data = $this->schem->validateAndConvertItems ($data, $this->schem->getSchem(), "data", "dict");
+
         }
         return $data;
     }
@@ -80,7 +83,7 @@ class TextDataModel {
         }
         
         if ($this->convertToDict){
-            $item = $this->schem->convertListItemToDict($item);
+            $item = $this->schem->validateAndConvertItemValues ($item, $this->schem->getSchem(), "data", "dict");
         }
         return $item;
     }
@@ -92,11 +95,11 @@ class TextDataModel {
             throw new TextDataModelException("Не корректные данные для add.");
         }
         
-        $info = $this->schem->checkValueBySchem($info, $surce);
+        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data");
         $newId = $this->data->add($info);
-
+        
         if ($newId) {
-            $this->updateLinkedBasesNew($newId, $info);
+            //$this->updateLinkedBasesNew($newId, $info);
             return $newId;
         }
 
@@ -112,12 +115,17 @@ class TextDataModel {
         if (!$info ) {
             throw new TextDataModelException("Не корректные данные для upd.");
         }
-        $info = $this->schem->checkValueBySchem($info, $surce);        
+
+        $convertProps = [];
+        if($surce!= "user") $convertProps["converAll"] = true;
+        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data");
 
         if ($this->data->upd($id, $info)){
+            /*
             if ($checkLinks){
                 $this->updateLinkedBasesNew($id, $info, $lastInfo);
-            }            
+            }
+            */
             return true;
         }
 
@@ -130,7 +138,7 @@ class TextDataModel {
         $lastInfo = $this->get($id);
         
         if ($this->data->del($id)){
-            $this->updateLinkedBasesNew($id, [], $lastInfo);            
+            //$this->updateLinkedBasesNew($id, [], $lastInfo);            
             return true;
         }
         
@@ -173,17 +181,16 @@ class TextDataModel {
     }    
 
     
-
+    /*
     public function updateLinkedBasesNew($cureId, $info, $lastInfo=[])
     {
         //Получаем массив элементов для обновления
         $listToUpd = $this->getItemsToUpdate ($cureId, $info, $lastInfo);
 
-        /*
-        echo 'Обновляем связанные базы<br>';
-        print_r($itemsToUpd);
-        echo '<br>';
-        */        
+        //echo 'Обновляем связанные базы<br>';
+        //print_r($itemsToUpd);
+        //echo '<br>';
+        
 
         foreach ($listToUpd as $modelName => $acts){
             $linkedModel = $this->models[$modelName];            
@@ -224,6 +231,7 @@ class TextDataModel {
         }
     }
 
+    
     protected function getItemsToUpdate ($cureItemId, $info, $lastInfo)
     {
         $linkedFields = $this->schem->getLinkedFields();
@@ -273,17 +281,29 @@ class TextDataModel {
         return $itemsToUpd;
 
     }
+    */
 
 
     public function getSchem ()
     {        
-        $data = $this->schem->getSchem();
+        $data = $this->schem->getSchem("dict");
+
+        /*
         $props = $this->convertProps;
         $props["isSchem"] = true;
         if ($this->convertToDict){
             $data = $this->schem->convertListItemsToDict($data, $props);
         }
+        */
         return $data;
+    }
+
+    public function saveSchem ($items)
+    {        
+        $convertProps["converAll"] = true;
+        $convertProps["isSchem"] = true;
+        $items = $this->schem->checkItemsBySchem($items, $convertProps);        
+        return $this->schem->saveSchem($items);
     }
 
 

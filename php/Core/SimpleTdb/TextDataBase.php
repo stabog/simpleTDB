@@ -13,7 +13,7 @@ class TextDataBase implements TDBInterface
         "root" => '',
         "path" => '',
         "indexType" => 'num',
-        "lastId" => 0,
+        "lastId" => -1,
     ];
     protected $possibleIndexTypes = ["num", "guid", "str"];
 
@@ -101,38 +101,6 @@ class TextDataBase implements TDBInterface
 
         return $func($data, 0);
     }
-
-
-    protected function makeFileIfNotExists(): void
-    {
-        if (!file_exists($this->props["root"])) mkdir($this->props["root"], 0777, true);
-        if (!file_exists($this->props["path"])) {
-            $f = fopen($this->props["path"], 'w');
-            if (!$f) {
-                $this->log('Error creating the file ' . $this->props["path"]);
-                throw new Exception('Error creating the file ' . $this->props["path"]);
-            } else {
-                if (flock($f, LOCK_EX)) {
-                    $header = [0, [$this->props["indexType"]]];
-                    $string = self::arrayToString($header, self::$sep);
-                    fputs($f, "$string\r\n");
-                    fflush($f);
-                    flock($f, LOCK_UN);
-                }
-            }
-            fclose($f);
-
-
-            //Добавляем информацию о базе
-            //$cols_title = [0,[$this->dbType]];
-            //$this->AddItemToBase ($cols_title);
-
-        }
-    }
-
-
-
-
 
 
     public function all(array $filters = [], array $sort = []): array
@@ -242,7 +210,7 @@ class TextDataBase implements TDBInterface
 
     public function get($id)
     {
-        if (!$id) return null;
+        if ($id !== 0 and !$id) return null;
 
         if (isset($this->items[$id])) {
             return $this->items[$id];
@@ -369,6 +337,31 @@ class TextDataBase implements TDBInterface
         }
     }
 
+
+    /* Функции с файлами */
+
+    protected function makeFileIfNotExists(): void
+    {
+        if (!file_exists($this->props["root"])) mkdir($this->props["root"], 0777, true);
+        if (!file_exists($this->props["path"])) {
+            $f = fopen($this->props["path"], 'w');
+            if (!$f) {
+                $this->log('Error creating the file ' . $this->props["path"]);
+                throw new Exception('Error creating the file ' . $this->props["path"]);
+            } else {
+                if (flock($f, LOCK_EX)) {
+                    $header = ["head", [$this->props["indexType"]]];
+                    $string = self::arrayToString($header, self::$sep);
+                    fputs($f, "$string\r\n");
+                    fflush($f);
+                    flock($f, LOCK_UN);
+                }
+            }
+            fclose($f);
+            //Добавляем информацию о базе
+        }
+    }
+
     protected function fileRead(bool $isIndexed = true): void
     {
         $result = [];
@@ -397,9 +390,9 @@ class TextDataBase implements TDBInterface
                 $keys = array_keys($result);
                 $this->props["lastId"] = end($keys);
             }
-            if (isset($result[0])) {
-                $this->head = $result[0];
-                unset($result[0]);
+            if (isset($result["head"])) {
+                $this->head = $result["head"];
+                unset($result["head"]);
             }
             $this->items = $result;
         } catch (Exception $e) {
@@ -411,7 +404,7 @@ class TextDataBase implements TDBInterface
 
     protected function fileUpdate(array $item, $id='')
     {
-        if ($id != '') {
+        if ($id !== '') {
             $item[0] = $id;
         } else {
             if ($this->props["indexType"] === "guid") {

@@ -7,13 +7,13 @@ use SimpleTdb\TextDataModel;
 class TextDataModelSessions extends TextDataModel
 {
     protected $schemItems = [
-        'id' => ['id', [], 0, 'Id колонки', true, true, 'text', '', '', [], [], []],
-        'ausData' => ['ausData', [], 1, 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
-        'userId' => ['userId', [], 2, 'User id', true, false, 'text', '', '', [], [], []],
-        'browser' => ['browser', [], 3, 'Browser ', true, false, 'text', '', '', [], [], []],
-        'ipAddress' => ['ipAddress', [], 4, 'IP адресс', true, false, 'text', '', '', [], [], []],
-        'end' => ['end', [], 5, 'Время окончания сессии', true, false, 'time', '', '', [], [], []],
-        'count' => ['count', [], 6, 'Счетчик проверки сессий', true, false, 'nump', '', '', [], [], []],
+        0 => [0, [], 'id', 'Id колонки', true, true, 'text', '', '', [], [], []],
+        1 => [1, [], 'ausData', 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
+        2 => [2, [], 'userId', 'User id', true, false, 'text', '', '', [], [], []],
+        3 => [3, [], 'browser', 'Browser ', true, false, 'text', '', '', [], [], []],
+        4 => [4, [], 'ipAddress', 'IP адресс', true, false, 'text', '', '', [], [], []],
+        5 => [5, [], 'end', 'Время окончания сессии', true, false, 'time', '', '', [], [], []],
+        6 => [6, [], 'count', 'Счетчик проверки сессий', true, false, 'nump', '', '', [], [], []],
     ];
     
     public function __construct(string $dbName = 'sess', string $dbPath = '', string $indexType = 'guid')

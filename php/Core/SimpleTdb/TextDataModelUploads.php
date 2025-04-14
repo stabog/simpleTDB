@@ -12,18 +12,22 @@ class TextDataModelUploads extends TDM {
     protected $imgMediumDir = '';
     protected $imgSmallDir = '';
 
+    protected $imgOrigSize = 2500;
+    protected $imgMediumSize = 1500;
+    protected $imgSmallSize = 250;
+
     protected $schemItems = [
-        'id' => ['id', [], 0, 'Id колонки', true, true, 'text', '', '', [], [], []],
-        'ausData' => ['ausData', [], 1, 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
-        'newName' => ['newName', [], 2, 'Новое имя', true, true, 'text', '', '', [], [], []],
-        'origName' => ['origName', [], 3, 'Оригинальное имя', true, false, 'text', '', '', [], [], []],
-        'url' => ['url', [], 4, 'Ссылка', true, false, 'text', '', '', [], [], []],
-        'type' => ['type', [], 5, 'Тип', true, false, 'text', '', '', [], [], []],
-        'size' => ['size', [], 6, 'Размер', true, false, 'numb', '', '', [], [], []],
-        'width' => ['width', [], 7, 'Ширина', true, false, 'numb', '', '', [], [], []],
-        'height' => ['height', [], 8, 'Высота', true, false, 'numb', '', '', [], [], []],
-        'duration' => ['duration', [], 9, 'Длительность', true, false, 'numb', '', '', [], [], []],
-        'props' => ['props', [], 10, 'Другие свойства', false, false, 'list', '', '', [], [], []],        
+        0 => [0, [], 'id', 'Id колонки', true, true, 'text', '', '', [], [], []],
+        1 => [1, [], 'ausData', 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
+        2 => [2, [], 'newName', 'Новое имя', true, true, 'text', '', '', [], [], []],
+        3 => [3, [], 'origName', 'Оригинальное имя', true, false, 'text', '', '', [], [], []],
+        4 => [4, [], 'url', 'Ссылка', true, false, 'text', '', '', [], [], []],
+        5 => [5, [], 'type', 'Тип', true, false, 'text', '', '', [], [], []],
+        6 => [6, [], 'size', 'Размер', true, false, 'numb', '', '', [], [], []],
+        7 => [7, [], 'width', 'Ширина', true, false, 'numb', '', '', [], [], []],
+        8 => [8, [], 'height', 'Высота', true, false, 'numb', '', '', [], [], []],
+        9 => [9, [], 'duration', 'Длительность', true, false, 'numb', '', '', [], [], []],
+        10 => [10, [], 'props', 'Другие свойства', false, false, 'list', '', '', [], [], []],        
     ];
     
 
@@ -251,7 +255,7 @@ class TextDataModelUploads extends TDM {
 
         
         if ($this->data->del($id)){
-            $this->updateLinkedBasesNew($id, [], $lastInfo);
+            //$this->updateLinkedBasesNew($id, [], $lastInfo);
             return true;
         }
         
@@ -351,10 +355,12 @@ class TextDataModelUploads extends TDM {
             $mediumFilePath = $this->imgMediumDir . $uniqueFileName;
             $smallFilePath = $this->imgSmallDir . $uniqueFileName;
 
+            
+
             // Конвертирование изображений и создание форматов medium и small
-            $response['convertImage'] = $this->imgResizeToJpg($file['tmp_name'], $filePath, 2500, 2500, 80);
-            $response['convertMedium'] = $this->imgResizeToJpg($filePath, $mediumFilePath, 1000, 1000, 80);
-            $response['convertSmall'] = $this->imgResizeToJpg($filePath, $smallFilePath, 200, 200, 90);
+            $response['convertImage']  = $this->imgResizeToJpg ($file['tmp_name'], $filePath, $this->imgOrigSize, $this->imgOrigSize, 80);
+            $response['convertMedium'] = $this->imgResizeToJpg ($file['tmp_name'], $mediumFilePath, $this->imgMediumSize, $this->imgMediumSize, 80);
+            $response['convertSmall']  = $this->imgResizeToJpg ($file['tmp_name'], $smallFilePath, $this->imgSmallSize, $this->imgSmallSize, 80);
 
             if ($response['convertImage'] > 0){
                 if ($response['convertImage'] == 1) $err_text = 'исходный файл не найден';
@@ -393,7 +399,7 @@ class TextDataModelUploads extends TDM {
 
         $newId = $this->data->add($tobase);
 
-        $response['id'] = $newId;
+        //$response['id'] = $newId;
 
         return $newId;
     }
