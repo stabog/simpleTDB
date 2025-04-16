@@ -50,10 +50,10 @@ class TextDataSchem
     
 
     /*
-    tag => [
-        tag
+    id => [
+        id
         ausData => [add_time, add_user, upd_time, upd_user, snc_time, snc_user]
-        inc: numb
+        tag: text
         title: text
         isSystem: bool
         isUnic: bool        
@@ -71,30 +71,7 @@ class TextDataSchem
             fieldProps: list
         ]
         linkProps: list
-       
-
     ]
-    
-    protected $schemItems = [
-        1 => [1, '', 'id', 0, 2, true, 'text', '', 1, 2, 'Id', '', '', 1, '', [], [], []],
-        2 => [2, '', 'sys', 1, 2, false, 'arra', '', 21, 2, 'Системные поля', '', '', 2, '', [], [], []],
-        3 => [3, '', 'tag', 2, 2, true, 'text', '', 1, 2, 'tag', '', '', 1, '', [], [], []],
-        4 => [4, '', 'increment', 3, 2, true, 'text', '', 1, 2, 'increment', '', '', 1, '', [], [], []],
-        5 => [5, '', 'isSystem', 4, 2, false, 'text', '', 1, 2, 'isSystem', '', '', 1, '', [], [], []],
-        6 => [6, '', 'dataUnic', 5, 2, false, 'text', '', 1, 2, 'dataUnic', '', '', 1, '', [], [], []],
-        7 => [7, '', 'dataType', 6, 2, false, 'text', '', 1, 2, 'dataType', '', '', 1, '', [], [], []],
-        8 => [8, '', 'dataSubType', 7, 2, false, 'text', '', 1, 2, 'dataSubType', '', '', 1, '', [], [], []],
-        9 => [9, '', 'fieldType', 8, 2, false, 'text', '', 1, 2, 'field Type', '', '', 1, '', [], [], []],
-        10 => [10, '', 'fieldViewType', 9, 2, false, 'text', '', 1, 2, 'field ViewType', '', '', 1, '', [], [], []],
-        11 => [11, '', 'fieldLabel', 10, 2, false, 'text', '', 1, 2, 'field Label', '', '', 1, '', [], [], []],
-        12 => [12, '', 'fieldPlaceholder', 11, 2, false, 'text', '', 1, 2, 'field Placeholder', '', '', 1, '', [], [], []],
-        13 => [13, '', 'fieldDescription', 12, 2, false, 'text', '', 1, 2, 'field Description', '', '', 1, '', [], [], []],
-        14 => [14, '', 'fieldOrder', 13, 2, false, 'numb', '', 1, 2, 'field Order', '', '', 1, '', [], [], []],
-        15 => [15, '', 'fieldDefaultVal', 14, 2, false, 'text', '', 1, 2, 'field Default Val', '', '', 1, '', [], [], []],
-        16 => [16, '', 'fieldProps', 15, 2, false, 'list', '', 1, 2, 'field Props', '', '', 1, '', [], [], []],
-        17 => [17, '', 'linkProps', 16, 2, false, 'list', '', 1, 2, 'link Props', '', '', 1, '', [], [], []],
-        17 => [18, '', 'listItems', 17, 2, false, 'list', '', 1, 2, 'list Items', '', '', 1, '', [], [], []],
-    ]; 
     */
 
 
@@ -202,56 +179,33 @@ class TextDataSchem
                 }                
             }
         }
-        
-
-        /*
-
-        //Получаем последний инкремент
-        $this->lastInc = $this->getIncrement ();
-
-        //Получаем все связи
-        foreach ($this->data->all() as $id => $info){
-            if (in_array($info[6], $this->linkTypes)){
-                $this->linkedFields[$id] = $info;
-            }
-        }
-        */
-        
-    }
-
-
-    /*
-    public function setModels ($models)
-    {
-        $this->models = $models;
-    }
-
-    public function getModels ()
-    {
-        return $this->models;
-    }
-    */
+    }    
 
 
     public function getSchem ($newType="data")
     {
         $items =  $this->data->all();
         $schem = $this->schemItems;
-
-        $convertedItems = $this->validateAndConvertItems ($items, $schem, "data", $newType);       
-
+        $convertedItems = $this->validateAndConvertItems ($items, $schem, "data", $newType);
         return $convertedItems;
     }
 
     
 
-    public function validateAndConvertItems ($items, $schem, $cureType="data", $newType="data")
+    public function validateAndConvertItems ($items, $schem, $cureType="data", $newType="data", $assignKeys=false)
     {
         $result = [];
         foreach ($items as $itemId => $itemInfo){
+            if (!is_array($itemInfo) or count($itemInfo) == 0) continue;
+
             $checkedItem = $this->validateAndConvertItemValues ($itemInfo, $schem, $cureType, $newType);
-            //$result[$itemId] = $checkedItem;
-            $result[] = $checkedItem;
+            
+            if ($assignKeys){
+                $result[$itemId] = $checkedItem;
+            } else {
+                $result[] = $checkedItem;
+            }
+            
         }
         return $result;
     }
@@ -291,109 +245,21 @@ class TextDataSchem
         return $result;
     }
     
-
-    /*
-
-    public function getlinkedFields ()
-    {
-        return $this->linkedFields;
-    }
-
-
-    protected function getVariantsLinks ($sInfo)
-    {
-        //Пропускаем, если в схеме не задана связь
-        if (!isset($sInfo[16]) or !is_array($sInfo[16])){
-            return []; 
-        }
-
-        //Пропускаем, если в схеме не задана модель
-        if (!isset($sInfo[16][0]) or $sInfo[16][0] == ''){
-            return []; 
-        }
-
-        $result = [];        
-
-        $cureModelName = $sInfo[16][0];
-        $cureModel = $this->models[$cureModelName];
-        $cureModelSchem = $cureModel->schem->getSchem();
-        $cureModelCols = $this->getSchemCols ($sInfo, $cureModelSchem);
-        
-        foreach ($cureModel->all() as $id => $info) {
-            $textArr = [];
-            foreach ($cureModelCols as $cId){
-                if (is_array($info[$cId])) continue;
-                $textArr[] = $info[$cId];
-            }
-
-            $result[$id][0] = implode(" ", $textArr);
-            if ($sInfo[6] == 'file'){
-                $result[$id][1] = $info[2];
-            }
-            //echo $id.' '. implode(" ", $textArr) .' <br>';
-        }
-
-        return $result;
-    }
     
 
-    protected function getSchemCols ($sInfo, $cureModelSchem)
+
+    public function addCol ($info)
     {
-        $colls = [];
-        $cureModelFields = $sInfo[16][1] ?? [3];
-        if (!is_array($cureModelFields)) $cureModelFields = [$cureModelFields];
-        //print_r($cureModelFields);
+        $tag = $origTag = $this->convertToValidVariableName($info[2]);
         
-        foreach ($cureModelFields as $fId){
-            $fieldCols = $cureModelSchem[$fId][3] ?? 3;
-            $colls[] = $fieldCols;
+        //Проверка на существование поля с таким tag
+        $cureTags = array_column($this->data->all(), 2);
+        while (in_array($tag, $cureTags)){
+            $tag = $origTag . rand(100, 999);
         }
-
-        return $colls;
-    }
-
-    protected function getIncrement ()
-    {
-        $lastInc = 0;
-        foreach ($this->data->all() as $itemInfo){
-            $itemInc = $itemInfo[2];
-            $lastInc = ($itemInc > $lastInc)? $itemInc : $lastInc;
-        }
-        return $lastInc;
-    }
-    */
-
-
-    public function addCol ($info, $id, $checkLinks = false)
-    {
-        /*
-        'id' => ['id', [], 0, 'Id колонки', false, true, 'text', '', '', [], [], []],
-        'ausData' => ['ausData', [], 1, 'Информация о создании/редактировании', true, false, 'list', '', '', [], [], []],
-        'inc' => ['inc', [], 2, 'Инкремент для базы', true, false, 'numb', '', '', [], [], []],
-        'title' => ['title', [], 3, 'Имя колонки', false, false, 'text', '', '', [], [], []],
-        'isSystem' => ['isSystem', [], 4, 'Колонка является системной', true, false, 'bool', '', '', [], [], []],
-        'isUnic' => ['isUnic', [], 5, 'Значение должно быть уникальным', false, false, 'bool', '', '', [], [], []],
-        'dataType' => ['dataType', [], 6, 'Тип данных', false, false, 'text', '', '', [], [], []],
-        'dataSubType' => ['dataSubType', [], 7, 'Подтип данных', false, false, 'numb', '', '', [], [], []],
-        'parentId' => ['parentId', [], 8, 'Id родительского элемента', false, false, 'text', '', '', [], [], []],
-        'items' => ['items', [], 9, 'Текущие элементы для выбора', false, false, 'dict', '', '', [], [], []],
-        'fieldInfo' => ['fieldInfo', [], 10, 'Настройки поля для формы', false, false, 'list', '', '', [], [], []],
-        'linkProps' => ['linkProps', [], 11, 'Настройки для связи', false, false, 'list', '', '', [], [], []],
-        */
-
-        $checkedId = $this->convertToValidVariableName($id);
         
-        //Проверка на существование поля с таким именем
-        if (isset($this->data->all()[$checkedId])){
-            if (!$checkLinks){
-                $_SESSION["message"][] = ['war', 'Колонка с именем ['.$checkedId.'] уже существует.'];
-                return $checkedId;
-            }
-            $checkedId .= rand(1000, 9999);
 
-        }
-
-        $title        = isset($info[3])  ? $info[3] : $id;
+        $title        = isset($info[3])  ? $info[3] : $origTag;
         $isSystem     = isset($info[4])  ? $info[4] : false;
         $isUnic       = isset($info[5])  ? $info[5] : false;
         $dataType     = isset($info[6])  ? $info[6] : 'text';
@@ -401,24 +267,22 @@ class TextDataSchem
         $parentId     = isset($info[8])  ? $info[8] : '';
         $items        = isset($info[9])  ? $info[9] : [];
         $fieldInfo    = isset($info[10]) ? $info[10] : [];
-        $linkProps    = isset($info[11]) ? $info[11] : [];
+        $linkProps    = isset($info[11]) ? $info[11] : [];        
         
-        $this->lastInc ++;
         $tobase = [
-            0 => $checkedId, //id
-            1 => [], //system            
-            2 => $this->lastInc, //increment
-            3 => $title, //Title
-            4 => $isSystem, //isSystem
-            5 => $isUnic, //isUnic
-            6 => $dataType, //dataType
-            7 => $dataSubtype,   //dataSubtype
-            8 => $parentId,   //parentId
-            9 => $items,   //items
-            10 => $fieldInfo,   //fieldInfo
-            11 => $linkProps, //linkProps
+            2 => $tag,
+            3 => $title,
+            4 => $isSystem,
+            5 => $isUnic,
+            6 => $dataType,
+            7 => $dataSubtype,
+            8 => $parentId,
+            9 => $items,
+            10 => $fieldInfo,
+            11 => $linkProps,
         ];
-        $colId = $this->data->add($tobase, $checkedId);
+
+        $colId = $this->data->add($tobase);
         return $colId;
     }
 
@@ -454,141 +318,7 @@ class TextDataSchem
         return $value;
     }
 
-
-    public function checkItemsBySchem($items, $props)
-    {
-        $result = [];
-        foreach ($items as $itemInfo){
-            if (!isset($itemInfo["id"])) continue;
-
-            $itemId = $itemInfo["id"];
-            $result[$itemId] = $this->checkValueBySchem($itemInfo, $props);
-        }
-        return $result;
-    }
-
-
-    // Проверяем значения по схеме, дополняем схему
-    //public function checkValueBySchem($info, $surce="user")
-    public function checkValueBySchem($info, $props)
-    {
-        $result = [];
-
-        if (isset($props["isSchem"])){
-            $schem = $this->schemItems;            
-            $processedInfo = $info;
-            
-        } else {
-            $schem = $this->getSchem();
-
-            //Добавление колонок
-            $schemNames = array_column($schem, 0);
-            $processedInfo = [];
-            foreach ($info as $infoId => $value) {
-                $colName = $infoId;
-                if (!in_array($infoId, $schemNames) and $value != '') {
-                    $colName = $this->addCol([], $infoId);                
-                }
-                $processedInfo[$colName] = $value;
-            }
-        }        
-        
-        
-
-        foreach ($schem as $sId => $sInfo) {
-            if ($sInfo[4]) {
-                //Пропускаем системную колонку
-                if (!isset($props["converAll"])) continue;
-            }
-            if ($sInfo[5]) {
-                //Добавить проверку на уникальность
-            }
-            $type = $sInfo[6];
-            $colName = $sId;
-            $colId = $sInfo[2];
-
-            $cureVal = '';
-            if (isset($processedInfo[$colName])) {                
-                $cureVal = $processedInfo[$colName];
-            }
-            //if (isset($info[$colId])) $cureVal = $info[$colId];
-
-            // Если bool
-            if ($type == 'bool') {
-                $cureVal = $cureVal ? "1" : "";
-            }
-
-            // Если link, arra, file
-            if (in_array($type, $this->arrayTypes)) {
-                $cureVal = $this->convertToArray($cureVal);
-            }
-
-            //echo '['.$colId.']: '.$cureVal.' \r\n';
-
-            $result[$colId] = $cureVal;
-        }
-
-        return $result;
-    }
-
-
-
-    public function convertListItemsToDict ($items, $props=[])
-    {        
-        $result = [];
-        foreach ($items as $itemId=> $itemInfo) {
-            $convertedItem = $this->convertListItemToDict ($itemInfo, $props);
-            if (isset($props['idToKeys'])){
-                unset($convertedItem["id"]);
-                $result[$itemId] = $convertedItem;
-            } else {
-                $result[] = $convertedItem;
-            }
-            
-        }
-        return $result;
-    }
-
-
-    public function convertListItemToDict ($item, $props=[])
-    {
-        $result = [];
-        if (isset($props["isSchem"])){
-            $schemItems = $this->schemItems;
-        } else {
-            $schemItems = $this->getSchem();
-        }
-        
-
-        foreach ($schemItems as $sId => $sInfo) {
-            $type = $sInfo[6];
-            $colName = $sId;
-            $colId = $sInfo[2];
-
-            if ($sId === 'passHash') {
-                if (isset($props["showHash"])) continue;
-                //echo $item[$colId];
-            }
-
-            $cureVal = '';
-            //Получаем инфо по colId
-            if (isset($item[$colId])) $cureVal = $item[$colId];
-
-            
-
-            // Если link, arra, file
-            if (in_array($type, $this->arrayTypes)) {
-                $cureVal = $this->convertToArray($cureVal);                
-            }
-
-            //Сохраняем инфо по colName
-            $result[$colName] = $cureVal;
-        }        
-
-        return $result;
-    }
-
-    // Новая функция для преобразования строки в корректное название переменной
+    // Функция для преобразования строки в корректное название переменной
     protected function convertToValidVariableName(string $input): string
     {
         // Преобразуем строку в нижний регистр
@@ -613,94 +343,62 @@ class TextDataSchem
     {
                 
         $toAdd = $toUpd = $toSkip = [];
+        $schem = $this->schemItems;
+        $cureItems = $this->data->all();
+
+        $newItems = $this->validateAndConvertItems ($items, $schem, "dict", "data");        
+        $oldItems = $this->validateAndConvertItems ($cureItems, $schem, "data", "data", true);
+
         
-
-        //$newItems = $items;
-        //$oldItems = $toDel = $this->getSchem();
-
-        foreach ($items as $sInfo){
-            $inc = $sInfo[2];
-            $newItems [$inc] = $sInfo;
-        }
-
-        foreach ($this->getSchem() as $sInfo){
-            $inc = $sInfo[2];
-            $oldItems [$inc] = $sInfo;
-        }
-
         $toDel = $oldItems;        
 
-        foreach ($newItems as $inc => $itemInfo){
-            
-            if (!isset($oldItems[$inc])){
-                $toAdd[$inc] = $itemInfo;
+        foreach ($newItems as $itemInfo){
+            $itemId = isset($itemInfo[0])? $itemInfo[0] : "";
+
+            if (!isset($oldItems[$itemId])){
+                $toAdd[] = $itemInfo;
                 continue;
+            }            
+
+            if ($this->isEqual($oldItems[$itemId], $itemInfo)){
+                $toSkip[$itemId] = $itemInfo;
             } else {
-
-                if ($this->isEqual($oldItems[$inc], $itemInfo)){
-                    $toSkip[$inc] = $itemInfo;
-                } else {
-                    $toUpd[$inc] = $itemInfo;
-                }
-
-                unset($toDel[$inc]);
+                $toUpd[$itemId] = $itemInfo;
             }
-            
-        }  
 
-        /*
+            unset($toDel[$itemId]);
+        }
 
-        foreach ($newItems as $itemId => $itemInfo){    
-            $inc = $sInfo[2];        
-            
-            if (!isset($oldItemsByInc[$inc])){
-                $toAdd[$itemId] = $itemInfo;
-                continue;
-            } else {
+        //return ["new" => $toAdd, "old" => $oldItems, count($toSkip), count($toAdd), count($toUpd), count($toDel)];
 
-                if ($oldItemsByInc[$inc][0] != )
-
-                if ($this->isEqual($oldItemsByInc[$inc], $itemInfo)){
-                    $toSkip[$itemId] = $itemInfo;
-                } else {
-                    $toUpd[$itemId] = $itemInfo;
-                }
-
-                unset($toDel[$itemId]);
-            }
-            
-        }     
-        */   
-
-        foreach ($toDel as $inc => $info){
-            $id = $info[0];
-            if (in_array($info[6], ["link", "file"])){
-                $info = $this->checkSchemLink([], $oldItems[$inc], $this->modelName);                
+        foreach ($toDel as $id => $info){
+            if (in_array($info[6], $this->linkTypes)){
+                $info = $this->checkSchemLink([], $oldItems[$id], $this->modelName);                
             }
             $this->delCol ($id);
         }
 
-        foreach ($toUpd as $inc => $info){
-            $id = $oldItems[$inc][0];
-            if (in_array($info[6], ["link", "file"])){
-                $info = $this->checkSchemLink($info, $oldItems[$inc], $this->modelName);                
+        foreach ($toUpd as $id => $info){
+            if (in_array($info[6], $this->linkTypes)){
+                $info = $this->checkSchemLink($info, $oldItems[$id], $this->modelName);                
             }
             
             $this->updCol ($id, $info);
         }
         
-        foreach ($toAdd as $id => $info){
-            $id = $info[0];
-            if (in_array($info[6], ["link", "file"])){
-                $info = $this->checkSchemLink($info, [], $this->modelName);                
-            }
+        foreach ($toAdd as $info){
+            $newId = $this->addCol ($info);
             
-            $this->addCol ($info, $id);
+            if (in_array($info[6], $this->linkTypes)){
+                $info[0] = $newId;
+                $info = $this->checkSchemLink($info, [], $this->modelName);
+                $this->updCol ($newId, $info);
+            }            
         }
         
 
         //return [count($toAdd), count($toUpd), count($toDel)];
-        return ["new" => $newItems, "old" => $oldItems, count($toSkip), count($toAdd), count($toUpd), count($toDel)];
+        return ["skipped" => count($toSkip), "added" => count($toAdd), "updated" => count($toUpd), "deleted" => count($toDel)];
 
     }
     
@@ -736,43 +434,36 @@ class TextDataSchem
         }
 
         $cureId = $cureInfo[0];
-        $newColName = $cureModel .'_link';
+        $newColInfo[2] = $cureModel .'_link';
         $newColInfo[6] = "link";
-        $newColInfo[11] = [$cureModel, ["id"], $cureId];
-
-        
+        $newColInfo[11] = [$cureModel, [2], $cureId];        
 
         //Если добавляем
         if (count($oldInfo) == 0){
-            $cureInfo[11][2] = $linkModel->schem->addCol($newColInfo, $newColName, true);
+            $cureInfo[11][2] = $linkModel->schem->addCol($newColInfo);
             return $cureInfo;
-        }
+        }       
 
-       
-
-        //Если редактируем
-        $oldLinkInfo = $oldInfo[11];
-        $oldId = $oldInfo[0];
+        //Если редактируем        
         $foundId = false;
-        
-        foreach ($linkModel->getSchem() as $lsId => $lsInfo){
-            $linkInfo = $lsInfo[11];
+        $linkModelSchem = $linkModel->schem->getSchem();
+
+        foreach ($linkModelSchem as $lsInfo){
+            
+
+            $lsId = $lsInfo[0];
+            $linkInfo = $lsInfo[11] ?? [];
 
             if (!in_array($lsInfo[6], $this->linkTypes)) continue;
             if (!isset($linkInfo[0]) or $linkInfo[0] != $cureModel) continue;
-            if (!isset($linkInfo[2]) or $linkInfo[2] != $oldId) continue;
+            if (!isset($linkInfo[2]) or $linkInfo[2] != $cureId) continue;
             
-            //Если совпадение по cureModel и oldId
-            if ($cureId != $oldId) {
-                //Обновляем ссялку если cureId изменился
-                $linkModel->schem->updCol($lsId, $newColInfo);                
-            } 
             $foundId = $lsId;
-
+            break;
         }
 
         if (!$foundId){
-            $cureInfo[11][2] = $linkModel->schem->addCol($newColInfo, $newColName, true);            
+            $cureInfo[11][2] = $linkModel->schem->addCol($newColInfo);            
         } else {
             $cureInfo[11][2] = $foundId;
         }        

@@ -299,10 +299,7 @@ class TextDataModel {
     }
 
     public function saveSchem ($items)
-    {        
-        $convertProps["converAll"] = true;
-        $convertProps["isSchem"] = true;
-        $items = $this->schem->checkItemsBySchem($items, $convertProps);        
+    {                
         return $this->schem->saveSchem($items);
     }
 

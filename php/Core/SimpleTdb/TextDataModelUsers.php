@@ -64,7 +64,8 @@ class TextDataModelUsers extends TextDataModel
         $userInfo['role'] = 1;
         $userInfo['status'] = 2;
 
-        $info = $this->schem->checkValueBySchem($userInfo, "sys");
+        //$info = $this->schem->checkValueBySchem($userInfo, "sys");
+        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data");        
         $newId = $this->data->add($info);
 
         if ($newId) {
