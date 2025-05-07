@@ -91,6 +91,7 @@ class TextDataModelRoot extends TDM {
 
     protected function getTdbFiles() {
         $files = glob($this->dbPath . '/*.tdb');
+        $files = array_filter($files, 'is_string');
         $filteredFiles = [];
         foreach (array_map('basename', $files) as $file) {
             if (substr($file, -10) === '_schem.tdb') {

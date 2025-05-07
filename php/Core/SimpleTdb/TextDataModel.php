@@ -115,7 +115,7 @@ class TextDataModel {
         if (!$info ) {
             throw new TextDataModelException("Не корректные данные для upd.");
         }
-
+        
         $convertProps = [];
         if($surce!= "user") $convertProps["converAll"] = true;
         $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data");

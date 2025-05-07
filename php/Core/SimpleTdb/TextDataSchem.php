@@ -250,15 +250,16 @@ class TextDataSchem
 
     public function addCol ($info)
     {
-        $tag = $origTag = $this->convertToValidVariableName($info[2]);
+        
+        $origTag = isset($info[2])  ? $info[2] : "";
+        $tag = $origTag = $this->convertToValidVariableName($origTag);
         
         //Проверка на существование поля с таким tag
         $cureTags = array_column($this->data->all(), 2);
         while (in_array($tag, $cureTags)){
             $tag = $origTag . rand(100, 999);
-        }
+        }        
         
-
         $title        = isset($info[3])  ? $info[3] : $origTag;
         $isSystem     = isset($info[4])  ? $info[4] : false;
         $isUnic       = isset($info[5])  ? $info[5] : false;
@@ -321,8 +322,16 @@ class TextDataSchem
     // Функция для преобразования строки в корректное название переменной
     protected function convertToValidVariableName(string $input): string
     {
-        // Преобразуем строку в нижний регистр
-        $input = strtolower($input);
+        // Транслитерация русских символов в латиницу
+        $translit = [
+            'а' => 'a', 'б' => 'b', 'в' => 'v', 'г' => 'g', 'д' => 'd', 'е' => 'e', 'ё' => 'e',
+            'ж' => 'zh', 'з' => 'z', 'и' => 'i', 'й' => 'y', 'к' => 'k', 'л' => 'l', 'м' => 'm',
+            'н' => 'n', 'о' => 'o', 'п' => 'p', 'р' => 'r', 'с' => 's', 'т' => 't', 'у' => 'u',
+            'ф' => 'f', 'х' => 'h', 'ц' => 'c', 'ч' => 'ch', 'ш' => 'sh', 'щ' => 'sch', 'ъ' => '',
+            'ы' => 'y', 'ь' => '', 'э' => 'e', 'ю' => 'yu', 'я' => 'ya',
+        ];
+        $input = mb_strtolower($input, 'UTF-8');
+        $input = strtr($input, $translit);
 
         // Заменяем все не буквенно-цифровые символы на подчеркивания
         $input = preg_replace('/[^a-z0-9]+/', '_', $input);
@@ -379,7 +388,13 @@ class TextDataSchem
         }
 
         foreach ($toUpd as $id => $info){
-            if (in_array($info[6], $this->linkTypes)){
+            $oldType = $oldItems[$id][6];
+            //Если старый тип ссылка а новый нет - удаляем связь
+            if (in_array($oldType, $this->linkTypes) and $info[6] != $oldType) {
+                $this->checkSchemLink([], $oldItems[$id], $this->modelName);
+                $info[11] = [];
+            }
+            if (in_array($info[6], $this->linkTypes)){                
                 $info = $this->checkSchemLink($info, $oldItems[$id], $this->modelName);                
             }
             
@@ -436,7 +451,7 @@ class TextDataSchem
         $cureId = $cureInfo[0];
         $newColInfo[2] = $cureModel .'_link';
         $newColInfo[6] = "link";
-        $newColInfo[11] = [$cureModel, [2], $cureId];        
+        $newColInfo[11] = [$cureModel, ["id"], $cureId];        
 
         //Если добавляем
         if (count($oldInfo) == 0){

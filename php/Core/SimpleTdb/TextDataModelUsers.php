@@ -30,7 +30,8 @@ class TextDataModelUsers extends TextDataModel
     {
         
         $users = $this->all();
-        $user = array_filter($users, function ($item) use ($email) {            
+        $user = array_filter($users, function ($item) use ($email) {
+            $item['email'] = $item['email'] ?? null;
             return $item['email'] === $email;
         });
         

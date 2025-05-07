@@ -80,6 +80,10 @@ $baseName = $links[2];
 $dbPath = 'apps/'.$appName.'/db';
 
 
+$uploads = new TDUploads('uploads', $dbPath, 'guid');
+$auth = new TextDataAuth($dbPath);
+
+
 switch ($baseName) {
     case 'root':
         $model = new TDRoot($baseName, $dbPath, 'num');
@@ -98,9 +102,7 @@ switch ($baseName) {
         break;
 }
 
-//$uploads = new TDUploads('uploads', $dbPath, 'guid');
 //$users = new TDUsers('users', $dbPath, 'guid');
-$auth = new TextDataAuth($dbPath);
 
 
 if ($baseName != 'auth'){
