@@ -430,10 +430,10 @@ class TextDataBase implements TDBInterface
                 }
             } else {
                 $item[0] = $this->props["lastId"] + 1;
-                $this->props["lastId"] = $item[0];
             }
         }
 
+        $this->props["lastId"] = $item[0];
         $string = self::arrayToString($item, self::$sep);
 
         try {

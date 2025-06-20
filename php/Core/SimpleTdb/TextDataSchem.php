@@ -175,12 +175,12 @@ class TextDataSchem
 
         $schemDbName = $this->modelName.'_schem';
         $this->data = TDB::getInstance($schemDbName, $modelPath);
-        
+
         //Обновляем информацию о схеме из модели в БД
         if (count ($this->modelSchem) > 0){            
             foreach ($this->modelSchem as $id => $info){
                 if (!$this->data->get($id)){
-                    $this->data->add($info, $id);                    
+                    $this->data->add($info, $id);
                 }                
             }
         }
@@ -290,10 +290,10 @@ class TextDataSchem
     
     protected function updateSchemByItem ($itemInfo)
     {
-        $cureSchemTags = array_column($this->getSchem(), 2);
+        $cureTags = array_column($this->data->all(), 2);
 
         foreach ($itemInfo as $key => $value){
-            if (!in_array($key, $cureSchemTags)){
+            if (!in_array($key, $cureTags)){
                 $info[2] = $key;
                 $this->addCol($info);
             }           
