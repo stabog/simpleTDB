@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataAuth Class Guide
+
+## Назначение
+Класс `TextDataAuth` предоставляет методы для аутентификации пользователей.
+
+## Основные методы
+- `__construct($dbPath)`: Конструктор класса.
+- `register(array $userInfo)`: Регистрирует пользователя.
+- `changePass(array $userInfo)`: Изменяет пароль пользователя.
+- `signin(array $loginInfo)`: Вход пользователя.
+- `signout($sessId='')`: Выход пользователя.
+- `getSession($sessId='')`: Возвращает сессию.
+

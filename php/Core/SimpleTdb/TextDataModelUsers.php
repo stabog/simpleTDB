@@ -52,21 +52,21 @@ class TextDataModelUsers extends TextDataModel
             throw new TextDataModelException("Пользователь с таким email уже зарегистрирован.");
         }
 
-        if (!isset($userInfo['password'])) {
+        if (!isset($userInfo['password']) or $userInfo['password'] === '') {
             throw new TextDataModelException("password не указан.");
         }
         if (!isset($userInfo['passwordRepeat']) or $userInfo['passwordRepeat'] != $userInfo['password']) {
             throw new TextDataModelException("passwordRepeat указан не верно.");
         }
-        
-        $userInfo['passHash'] = password_hash($userInfo['password'], PASSWORD_DEFAULT);
+
+        $userInfo['passHash'] = password_hash($userInfo['password'], PASSWORD_BCRYPT);
         unset($userInfo['password']);
         unset($userInfo['passwordRepeat']);
         $userInfo['role'] = 1;
         $userInfo['status'] = 2;
 
         //$info = $this->schem->checkValueBySchem($userInfo, "sys");
-        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data");        
+        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data", $showHash=true);        
         $newId = $this->data->add($info);
 
         if ($newId) {
@@ -76,5 +76,45 @@ class TextDataModelUsers extends TextDataModel
         
 
         return false;
-    }    
+    }
+    
+    public function changePass(array $data)
+    {        
+        if (!isset($data['id'])) {
+            throw new TextDataModelException("id пользователя не указан");
+        }
+
+        if (!isset($data['password']) or $data['password'] === '') {
+            throw new TextDataModelException("password не указан.");
+        }
+        
+        $userInfo = $this->get($data['id']);
+        if (!$userInfo) {
+            throw new TextDataModelException("Пользователь не найден.");
+        }
+
+        $userInfo['passHash'] = password_hash($data['password'], PASSWORD_BCRYPT);
+        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data", $showHash=true);        
+        return $newId = $this->data->upd($data['id'], $info);
+        
+        
+    }
+    
+    public function getSysInfo($id)
+    {        
+        if (!$id ) {
+            throw new TextDataModelException("ID не указан.");
+        }
+
+        $item = $this->data->get($id);
+        if (!$item){
+            throw new TextDataModelException("Элемент '$id' не найден в базе.");
+            return false;
+        }
+        
+        $item = $this->schem->validateAndConvertItemValues ($item, $this->schem->getSchem(), "data", "dict", $showHash=true);
+        return $item;
+    }
+    
+    
 }

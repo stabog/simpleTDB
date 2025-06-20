@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataModelRoot Class Guide
+
+## Назначение
+Класс `TextDataModelRoot` наследует `TextDataModel` и предоставляет методы для работы с корневыми моделями данных.
+
+## Основные методы
+- `__construct(string $dbName='', string $dbPath='', string $indexType='')`: Конструктор класса.
+- `add($info, $surce="user")`: Добавляет запись.
+- `upd($id, $info, $surce="user", $checkLinks=true)`: Обновляет запись.
+- `del($fileName)`: Удаляет запись.
+- `getTdbFiles()`: Возвращает файлы базы данных.
+

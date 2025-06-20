@@ -1,3 +1,16 @@
+<IfModule mod_headers.c>
+    # Разрешить все  
+    Header always set Access-Control-Allow-Origin "*"
+
+    # Какие методы и заголовки разрешены
+    Header always set Access-Control-Allow-Methods "GET, POST, OPTIONS"
+    Header always set Access-Control-Allow-Headers "Content-Type, Authorization"
+
+    # Чтобы pre flight кэшировался подольше (опц.)
+    Header always set Access-Control-Max-Age "86400"
+</IfModule>
+
+
 # Кодировка по умолчанию
 AddDefaultCharset UTF-8
 # подключаем модуль mod_rewrite

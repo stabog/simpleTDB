@@ -1,0 +1,29 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataModel Class Guide
+
+## Назначение
+Класс `TextDataModel` предоставляет методы для работы с моделями данных.
+
+## Основные методы
+- `__construct(string $dbName='', string $dbPath='', string $indexType='')`: Конструктор класса.
+- `setRespFormatToDict(array $props=[])`: Устанавливает формат ответа в виде словаря.
+- `setModels()`: Устанавливает модели.
+- `getDbName()`: Возвращает имя базы данных.
+- `all($filters = [])`: Возвращает все записи.
+- `get($id)`: Возвращает запись по ID.
+- `add($info, $surce="user")`: Добавляет запись.
+- `upd($id, $info, $surce="user", $checkLinks=true)`: Обновляет запись.
+- `del($id)`: Удаляет запись.
+- `addItems($items)`: Добавляет несколько записей.
+- `updItems($items)`: Обновляет несколько записей.
+- `delItems($keys)`: Удаляет несколько записей.
+- `modifyImportItem($item)`: Модифицирует импортированную запись.
+- `updateLinkedBasesNew($cureId, $info, $lastInfo=[])`: Обновляет связанные базы данных.
+- `getItemsToUpdate ($cureItemId, $info, $lastInfo)`: Возвращает записи для обновления.
+- `getSchem()`: Возвращает схему.
+- `saveSchem($items)`: Сохраняет схему.
+

@@ -3,7 +3,6 @@
 namespace SimpleTdb;
 
 use SimpleTdb\TextDataModel as TDM;
-use getID3;
 
 class TextDataModelRoot extends TDM {
     protected $dbName = 'root';

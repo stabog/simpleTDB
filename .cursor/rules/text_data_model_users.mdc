@@ -1,0 +1,18 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataModelUsers Class Guide
+
+## Назначение
+Класс `TextDataModelUsers` наследует `TextDataModel` и предоставляет методы для работы с пользователями.
+
+## Основные методы
+- `__construct(string $dbName = 'users', string $dbPath = '', string $indexType = 'guid')`: Конструктор класса.
+- `add($info, $surce="user")`: Добавляет пользователя.
+- `getUserIdByEmail($email)`: Возвращает ID пользователя по email.
+- `reg(array $userInfo)`: Регистрирует пользователя.
+- `changePass(array $data)`: Изменяет пароль пользователя.
+- `getSysInfo($id)`: Возвращает системную информацию о пользователе.
+

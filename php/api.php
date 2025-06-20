@@ -14,6 +14,8 @@ require_once "php/Core/SimpleTdb/TextDataModelUploads.php";
 require_once "php/Core/SimpleTdb/TextDataModelUsers.php";
 require_once "php/Core/SimpleTdb/TextDataModelSessions.php";
 
+require_once "php/Modules/Requests.php";
+
 use Dotenv\Dotenv;
 $dotenv = Dotenv::createImmutable(__DIR__ . '/../');
 $dotenv->load();
@@ -27,6 +29,8 @@ use SimpleTdb\TextDataAuth;
 use SimpleTdb\TextDataModelRoot as TDRoot;
 use SimpleTdb\TextDataModelUploads as TDUploads;
 use SimpleTdb\TextDataModelUsers as TDUsers;
+
+use Requests as TDRequests;
 
 const FDB_PATH = 'db';
 const SITE_NAME = 'simpleTDB';
@@ -46,10 +50,11 @@ if (isset($_COOKIE)) {foreach ($_COOKIE as $key => $val) {$$key = $val;}}
 
 //print_r($links);
 
-
+/*
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+*/
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     // Ответ на preflight-запрос
@@ -73,33 +78,66 @@ if (!isset($links[2])) {
 }
 
 
+$id = $id ?? null;
+$tdbPath = $tdbPath ?? null;
+
+
+$input = file_get_contents('php://input');
+$data = json_decode($input, true);
+$data['item'] = (isset($data['item']) && is_array($data['item']))? $data['item'] : null;
+
 
 
 $appName = $links[1];
 $baseName = $links[2];
-$dbPath = 'apps/'.$appName.'/db';
 
+$appRoot = 'apps/'.$appName;
+$dbRoot = '/db';
+$dbPath = $appRoot.$dbRoot;
+$uploadDbPath = $dbPath;
+$uploadPath = '';
 
-$uploads = new TDUploads('uploads', $dbPath, 'guid');
-$auth = new TextDataAuth($dbPath);
+if ($tdbPath and $tdbPath != $dbRoot){   
+    if (strpos($tdbPath, '/') === 0) {
+        $sepDbPath = $appRoot . $tdbPath;
+        $uploadPath = $appRoot . $tdbPath;
+    } else {
+        $sepDbPath = $dbPath . '/' . $tdbPath;
+        $uploadPath = $dbPath . '/' . $tdbPath;        
+    }
 
+    if (substr($uploadPath, -1) !== '/') {
+        $uploadPath .= '/';
+    }
+    
+    $uploads = new TDUploads('uploads', $dbPath, 'guid', $uploadPath);
+    $model = new TDM($baseName, $sepDbPath, 'guid', $updByItem=true);
 
-switch ($baseName) {
-    case 'root':
-        $model = new TDRoot($baseName, $dbPath, 'num');
-        break;
-    case 'uploads':
-        $model = new TDUploads($baseName, $dbPath, 'guid');
-        break;
-    case 'users':
-        $model = new TDUsers($baseName, $dbPath, 'guid');
-        break;
-    case 'auth':
-        $model = new TextDataAuth($dbPath);
-        break;
-    default:
-        $model = new TDM($baseName, $dbPath, 'guid');
-        break;
+} else {
+
+    $uploads = new TDUploads('uploads', $uploadDbPath, 'guid', $uploadPath);
+    $auth = new TextDataAuth($dbPath);
+    switch ($baseName) {
+        case 'root':
+            $model = new TDRoot($baseName, $dbPath, 'num');
+            break;
+        case 'uploads':
+            $model = new TDUploads($baseName, $uploadDbPath, 'guid', $uploadPath);
+            break;
+        case 'users':
+            $model = new TDUsers($baseName, $dbPath, 'guid');
+            break;
+        case 'auth':
+            $model = new TextDataAuth($dbPath);
+            break;
+        case 'requests':
+            $model = new TDRequests($baseName, $dbPath);
+            $requests = $model;
+            break;
+        default:
+            $model = new TDM($baseName, $dbPath, 'guid');
+            break;
+    }
 }
 
 //$users = new TDUsers('users', $dbPath, 'guid');
@@ -112,14 +150,11 @@ if ($baseName != 'auth'){
 }
 
 
-$id = $id ?? null;
-$input = file_get_contents('php://input');
-$data = json_decode($input, true);
-$data['item'] = (isset($data['item']) && is_array($data['item']))? $data['item'] : null;
+
 
 
 $nonCriticalErrors = [];
-$result = false;
+$result["success"] = false;
 
 
 try {
@@ -136,7 +171,7 @@ try {
 
         case 'add':
             $result["item_id"] = $model->add($data['item']);
-            $result["success"] = true;
+            if ($result["item_id"]) $result["success"] = true;
             break;
 
         case 'upd':
@@ -172,7 +207,7 @@ try {
             break;
         
         case 'signIn':            
-            $result["session_id"] = $auth->signin($data['item']);
+            $result["items"] = $auth->signin($data['item']);
             $result["success"] = true;
             break;
 
@@ -184,11 +219,27 @@ try {
         case 'signOut':            
             $result["success"] = $auth->signout($id);
             break;
+            
+        case 'changePass':            
+            $result["item_id"] = $auth->changePass($data);
+            $result["success"] = true;
+            break;
+
+        case 'getCounts':
+            if ($baseName == "requests"){
+                $result["data"] = $requests->countRequests($id);
+                $result["success"] = true;
+            }            
+            break;
 
         case 'getUserIdByEmail':            
             $result["item_id"] = $users->getUserIdByEmail($id);
             $result["success"] = true;
             break;
+
+        
+            
+       
 
         default:
             $result = ['error' => 'Invalid action'];

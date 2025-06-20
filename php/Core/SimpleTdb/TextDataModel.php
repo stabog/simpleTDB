@@ -12,6 +12,7 @@ class TextDataModel {
     protected $dbPath = "";
     protected $indexType = "";
     protected $convertToDict = false;
+    protected $schemUpdate = false;
     protected $convertProps = [];
 
     protected $data;
@@ -20,19 +21,22 @@ class TextDataModel {
     protected $models = [];
 
     protected $schemItems = [
-        0 => [0, [], 'id', 'Id колонки', true, true, 'text', '', '', [], [], []],
+        0 => [0, [], 'id', 'Id', true, true, 'text', '', '', [], [], []],
         1 => [1, [], 'ausData', 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
+        2 => [2, [], 'title', 'Название', false, false, 'text', '', '', [], [], []],
     ];    
     
 
-    public function __construct(string $dbName='', string $dbPath='', string $indexType=''){
+    public function __construct(string $dbName='', string $dbPath='', string $indexType='', bool $schemUpdate=false){
         $this->dbName = ($dbName != '')? $dbName : $this->dbName;
         $this->dbPath = ($dbPath != '')? $dbPath : $this->dbPath;
-        $this->indexType = ($indexType != '')? $indexType : $this->indexType;        
-        
+        $this->indexType = ($indexType != '')? $indexType : $this->indexType;
 
         $this->data = TDB::getInstance($this->dbName, $this->dbPath, $this->indexType);
         $this->schem = new TDS($this->dbName, $this->dbPath, $this->schemItems);
+        $this->schemUpdate = $schemUpdate;
+
+        $this->setModels();
     }
     
     public function setRespFormatToDict(array $props=[]) {
@@ -40,6 +44,19 @@ class TextDataModel {
         foreach ($props as $key => $value ){
             if ($value) $this->convertProps[$key] = $value;
         }
+    }
+
+    
+
+    protected function setModels()
+    {
+        /*
+        foreach ($this->schem->getLinkedFields() as $sInfo){
+            if (!isset($sInfo[11]) or !is_array($sInfo[11]) or $sInfo[11][0] == '') continue;
+            $modelName = $sInfo[11][0];
+            $this->models[$modelName] = new self($modelName, $this->dbPath);
+        }
+        */
     }
 
     /*
@@ -62,10 +79,8 @@ class TextDataModel {
     public function all($filters = [])
     {        
         $data = $this->data->all();
-        if ($this->convertToDict){
-            $data = $this->schem->validateAndConvertItems ($data, $this->schem->getSchem(), "data", "dict");
+        $data = $this->schem->validateAndConvertItems ($data, $this->schem->getSchem(), "data", "dict");
 
-        }
         return $data;
     }
 
@@ -82,9 +97,8 @@ class TextDataModel {
             return false;
         }
         
-        if ($this->convertToDict){
-            $item = $this->schem->validateAndConvertItemValues ($item, $this->schem->getSchem(), "data", "dict");
-        }
+        
+        $item = $this->schem->validateAndConvertItemValues ($item, $this->schem->getSchem(), "data", "dict", false);
         return $item;
     }
 
@@ -95,11 +109,11 @@ class TextDataModel {
             throw new TextDataModelException("Не корректные данные для add.");
         }
         
-        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data");
+        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data", $this->schemUpdate);
         $newId = $this->data->add($info);
         
         if ($newId) {
-            //$this->updateLinkedBasesNew($newId, $info);
+            $this->updateLinkedBasesNew($newId, $info);
             return $newId;
         }
 
@@ -110,7 +124,7 @@ class TextDataModel {
 
     public function upd($id, $info, $surce="user", $checkLinks=true)
     {   
-        $lastInfo = $this->get($id);
+        $lastInfo = $this->data->get($id);
 
         if (!$info ) {
             throw new TextDataModelException("Не корректные данные для upd.");
@@ -118,12 +132,13 @@ class TextDataModel {
         
         $convertProps = [];
         if($surce!= "user") $convertProps["converAll"] = true;
-        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data");
+        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data", $this->schemUpdate);
 
-        if ($this->data->upd($id, $info)){
+        if ($this->data->upd($id, $info)){            
+            $this->updateLinkedBasesNew($id, $info, $lastInfo);
             /*
             if ($checkLinks){
-                $this->updateLinkedBasesNew($id, $info, $lastInfo);
+                
             }
             */
             return true;
@@ -178,22 +193,138 @@ class TextDataModel {
             }
         }
         return $item;
-    }    
+    }
+    
+    
 
     
-    /*
+    
     public function updateLinkedBasesNew($cureId, $info, $lastInfo=[])
     {
-        //Получаем массив элементов для обновления
-        $listToUpd = $this->getItemsToUpdate ($cureId, $info, $lastInfo);
+        $linkedFields = $this->schem->getLinkedFields();
+        //print_r( $linkedFields);
 
+        $this->setLinkedModels ($linkedFields);
+        
+        //Получаем массив элементов для обновления
+        $listToUpd = $this->getItemsToUpdate ($linkedFields, $cureId, $info, $lastInfo);
+        
+
+        //$this->updateLinkedBases($listToUpd);
+
+        
+    }
+
+    protected function setLinkedModels ($linkedFields){
+        //foreach ($this->schem->getLinkedFields() as $sInfo){
+        foreach ($linkedFields as $sInfo){
+            if (!isset($sInfo["linkProps"]) or !is_array($sInfo["linkProps"])) continue;
+            if ($sInfo["linkProps"][0] == '') continue;
+            $modelName = $sInfo["linkProps"][0];
+            $this->models[$modelName] = new self($modelName, $this->dbPath);
+        }
+    }
+
+    
+    protected function getItemsToUpdate ($linkedFields, $cureItemId, $info, $lastInfo)
+    {
+        $itemsToUpd = [];
+        foreach ($linkedFields as $sInfo){
+
+            $modelName = $sInfo["linkProps"][0] ?? '';
+            if (!isset($this->models[$modelName])) continue;
+            $linkModel = $this->models[$modelName];
+
+            $linkSchemId = $sInfo["linkProps"][2] ?? '';
+            if ($linkSchemId === '') continue;
+
+            $linkSchem = $linkModel->schem->getSchem ("data");
+            if (!isset($linkSchem[$linkSchemId])) continue;
+            
+
+            //Получаем все id из текущего поля
+            $cureModelId = $sInfo["id"];
+            //$items = $info[$cureModelId] ?? [];
+            $items =  isset($info[$cureModelId])? $this->schem->convertToArray($info[$cureModelId]) : [];
+            $lastItems = $lastInfo[$cureModelId] ?? [];
+            $lastItems =  $this->schem->convertToArray($lastItems);            
+
+            /*
+            print_r($items);
+            print_r($lastItems);
+            echo '<hr>';
+            */
+
+            $itemsToAdd = array_diff($items, $lastItems);
+            $itemsToDel = array_diff($lastItems, $items);
+
+            //print_r($itemsToAdd);
+            //print_r($itemsToDel);
+            
+
+            //Добавляем новые связи
+            if (count($itemsToAdd) > 0){
+                foreach ($itemsToAdd as $linkedId){
+                    $itemsToUpd[$modelName]["add"][$linkedId] = [$linkSchemId, $cureItemId];
+                    $this->updLinkModel ($modelName, $linkedId, $linkSchemId, $cureItemId, "add");
+                }
+            }
+
+            //Удаляем старые связи
+            if (count($itemsToDel) > 0){
+                foreach ($itemsToDel as $linkedId){
+                    $itemsToUpd[$modelName]["del"][$linkedId] = [$linkSchemId, $cureItemId];
+                    $this->updLinkModel ($modelName, $linkedId, $linkSchemId, $cureItemId, "del");
+                }
+            }
+        }
+
+        return $itemsToUpd;
+
+    }
+
+    protected function updLinkModel ($linkModelName, $linkItemId, $linkDataId, $cureId, $act){
+        $linkModel = $this->models[$linkModelName];
+        $linkItem = $linkModel->data->get($linkItemId);
+
+        if (!$linkItem) return;
+        
+        $linkItem[$linkDataId] = $linkItem[$linkDataId] ?? [];
+        $linkItemCell = $linkItem[$linkDataId];
+        $linkItemCell = (is_array($linkItemCell)) ? $linkItemCell : [$linkItemCell];
+        $linkItemCell = array_diff($linkItemCell, [""]);
+
+        if ($act === 'add'){
+             if (!in_array($cureId, $linkItemCell)){
+                $linkItemCell[] = $cureId;
+             }
+        }
+        if ($act === 'del'){
+            if (in_array($cureId, $linkItemCell)){
+                $key = array_search($cureId, $linkItemCell);
+                unset($linkItemCell[$key]);
+                $linkItemCell = array_values($linkItemCell);
+            }
+        }
+
+        if ($linkItemCell != $linkItem[$linkDataId]){
+            $linkItem[$linkDataId] = $linkItemCell;
+            $linkModel->data->upd($linkItemId, $linkItem);
+        }
+
+    }
+
+    protected function updateLinkedBases ($listToUpd)
+    {
         //echo 'Обновляем связанные базы<br>';
         //print_r($itemsToUpd);
         //echo '<br>';
         
-
+        //Обработка на уровне данных
+        //[model][act][items]
         foreach ($listToUpd as $modelName => $acts){
-            $linkedModel = $this->models[$modelName];            
+            // Создаем новую модель с именем $modelName
+            $linkedModel = $this->models[$modelName];
             $itemsToUpd = [];
 
             foreach ($acts as $type => $items){
@@ -203,7 +334,7 @@ class TextDataModel {
                     $value = $params[1];
                     $cureItem = $linkedModel->get($itemId);
                     $cureItem[$colId] = $cureItem[$colId] ?? [];
-                    $cureItem[$colId] = $linkedModel->schem->convertToArray($cureItem[$colId]);
+                    //$cureItem[$colId] = $linkedModel->schem->convertToArray($cureItem[$colId]);
                     
 
                     if ($type == "add" and !in_array($value, $cureItem[$colId])){
@@ -224,69 +355,19 @@ class TextDataModel {
                 }
                 
             }
-            echo '<br>'.$modelName.'<br>';
-            print_r($itemsToUpd);
+            //echo '<br>'.$modelName.'<br>';
+            //print_r($itemsToUpd);
 
             //$linkedModel->updItems($itemsToUpd);
         }
     }
-
     
-    protected function getItemsToUpdate ($cureItemId, $info, $lastInfo)
-    {
-        $linkedFields = $this->schem->getLinkedFields();
-        if (count($linkedFields) == 0) return [];
-
-        $itemsToUpd = [];
-
-        foreach ($linkedFields as $sId => $sInfo){
-
-            $modelName = $sInfo[16][0] ?? '';
-            $modelSchemId = $sInfo[16][2] ?? '';
-            
-            if ($modelName === '') continue;
-            if ($modelSchemId === '') continue;
-            if (!isset($this->models[$modelName])) continue;            
-
-            $model = $this->models[$modelName];            
-            $schemItems = $model->schem->getSchem();
-            
-            if (!isset($schemItems[$modelSchemId])) continue;
-
-            $infoId = $schemItems[$modelSchemId][3] ?? '';
-
-            if ($infoId === '') continue;
-            
-            $itemId = $sInfo[3];            
-            
-            //Элементы, в которые нужно добавить
-            if (count($info) > 0) {
-                $cureVals = $info[$itemId];
-                foreach ($cureVals as $linkedId){
-                    $itemsToUpd[$modelName]["add"][$linkedId] = [$infoId, $cureItemId];
-                }
-            }
-            
-            //Элементы, из которых нужно удалить
-            if (count($lastInfo) > 0) {
-                $lastVals = $lastInfo[$itemId] ?? [];
-                $lastVals = $model->schem->convertToArray($lastVals);
-                $keysToDel = array_diff($lastVals, $cureVals);
-                foreach ($keysToDel as $linkedId){
-                    $itemsToUpd[$modelName]["del"][$linkedId] = [$infoId, $cureItemId];
-                }
-            }
-        }
-
-        return $itemsToUpd;
-
-    }
-    */
 
 
     public function getSchem ()
     {        
-        $data = $this->schem->getSchem("dict");
+        $schemDict = $this->schem->getSchem("dict");
+        $schem = $this->schem->fillLinkedItems($schemDict);
 
         /*
         $props = $this->convertProps;
@@ -295,7 +376,7 @@ class TextDataModel {
             $data = $this->schem->convertListItemsToDict($data, $props);
         }
         */
-        return $data;
+        return $schem;
     }
 
     public function saveSchem ($items)

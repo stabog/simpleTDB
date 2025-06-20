@@ -1,0 +1,16 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataModelSessions Class Guide
+
+## Назначение
+Класс `TextDataModelSessions` наследует `TextDataModel` и предоставляет методы для работы с сессиями.
+
+## Основные методы
+- `__construct(string $dbName = 'sess', string $dbPath = '', string $indexType = 'guid')`: Конструктор класса.
+- `createSession(string $userId)`: Создает сессию.
+- `getSession(string $sessionId)`: Возвращает сессию.
+- `delSession(string $sessionId)`: Удаляет сессию.
+

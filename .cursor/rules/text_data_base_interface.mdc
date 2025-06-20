@@ -1,0 +1,19 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TDBInterface Interface Guide
+
+## Назначение
+Интерфейс `TDBInterface` определяет методы для работы с текстовыми базами данных.
+
+## Основные методы
+- `all(array $sort = [])`: Возвращает все записи.
+- `flt(array $params, array $sort = [])`: Возвращает отфильтрованные записи.
+- `add(array $item)`: Добавляет запись.
+- `get($id)`: Возвращает запись по ID.
+- `upd($id, array $item)`: Обновляет запись.
+- `rpl($id, array $item)`: Заменяет запись.
+- `del($id)`: Удаляет запись.
+

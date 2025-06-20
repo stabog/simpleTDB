@@ -1,0 +1,26 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataSchem Class Guide
+
+## Назначение
+Класс `TextDataSchem` предоставляет методы для работы со схемами данных.
+
+## Основные методы
+- `__construct($modelName, $modelPath, $modelSchem)`: Конструктор класса.
+- `getSchem($newType="data")`: Возвращает схему.
+- `getLinkedFields()`: Возвращает связанные поля.
+- `validateAndConvertItems($items, $schem, $cureType="data", $newType="data", $assignKeys=false)`: Валидирует и конвертирует записи.
+- `validateAndConvertItemValues($itemInfo, $schem, $cureType="data", $newType="data", $showHash=false)`: Валидирует и конвертирует значения записи.
+- `addCol($info)`: Добавляет колонку.
+- `updCol($id, $info)`: Обновляет колонку.
+- `delCol($id)`: Удаляет колонку.
+- `convertToArray($value)`: Конвертирует значение в массив.
+- `convertToValidVariableName(string $input)`: Конвертирует строку в допустимое имя переменной.
+- `saveSchem($items)`: Сохраняет схему.
+- `isEqual($old, $new)`: Проверяет равенство.
+- `checkSchemLink($cureInfo, $oldInfo, $cureModel)`: Проверяет ссылку схемы.
+- `fillLinkedItems(array $schemDict)`: Заполняет связанные записи.
+

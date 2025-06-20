@@ -26,8 +26,13 @@ class TextDataAuth
 
     public function register(array $userInfo)
     {
-        $userId = $this->usersModel->reg($userInfo);        
+        $userId = $this->usersModel->reg($userInfo);
         return $userId;
+    }
+    
+    public function changePass(array $userInfo)
+    {
+        return $this->usersModel->changePass($userInfo);
     }
 
     public function signin(array $loginInfo)
@@ -45,13 +50,20 @@ class TextDataAuth
             throw new TextDataModelException("Пользователь с указанными данными не найден.");
         }
 
-        $user = $this->usersModel->get($userId);
-
+        $user = $this->usersModel->getSysInfo($userId);
+        
+        /*
+        echo password_hash($password, PASSWORD_BCRYPT);
+        echo "\r\n";
+        echo $user["passHash"];
+        */
+        
         if(!password_verify($password, $user["passHash"])){
             throw new TextDataModelException("Пароль неправильный.");
         }
 
-        return $this->sessionsModel->createSession($user['id']);
+        $sessId = $this->sessionsModel->createSession($user['id']);
+        return $this->sessionsModel->getSession($sessId);
     }
 
     public function signout($sessId='')
@@ -73,4 +85,6 @@ class TextDataAuth
         return $this->sessionsModel->getSession($sessId);
 
     }
+    
+    
 }

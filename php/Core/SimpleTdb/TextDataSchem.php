@@ -47,7 +47,9 @@ class TextDataSchem
 
     protected $data;
     protected $models;
-    
+    protected $convertedItems;
+    protected $updByItem = false;
+    protected $isUpdatingSchem = false;
 
     /*
     id => [
@@ -59,8 +61,10 @@ class TextDataSchem
         isUnic: bool        
         dataType: text ?? one of mainTypes
         dataSubType: text ?? one of subTypes
-        parentId: text 
-        items: dict
+        parentId: numb
+        order: numb 
+        items: dict        
+        linkProps: list
         fieldInfo => [
             fieldTypeId: numb  <- зависит от dataType
             fieldViewTypeId: numb <- зависит от fieldType
@@ -70,24 +74,24 @@ class TextDataSchem
             fieldDefaultVal <- зависит от dataType
             fieldProps: list
         ]
-        linkProps: list
     ]
     */
 
 
     protected $schemItems = [
-        0  => [0, [], 'id', 'Id колонки', false, true, 'text', '', '', [], [], []],
-        1  => [1, [], 'ausData', 'Информация о создании/редактировании', true, false, 'list', '', '', [], [], []],
-        2  => [2, [], 'tag', 'Тэг колонки', true, false, 'numb', '', '', [], [], []],
-        3  => [3, [], 'title', 'Имя колонки', false, false, 'text', '', '', [], [], []],
-        4  => [4, [], 'isSystem', 'Колонка является системной', true, false, 'bool', '', '', [], [], []],
-        5  => [5, [], 'isUnic', 'Значение должно быть уникальным', false, false, 'bool', '', '', [], [], []],
-        6  => [6, [], 'dataType', 'Тип данных', false, false, 'text', '', '', [], [], []],
-        7  => [7, [], 'dataSubType', 'Подтип данных', false, false, 'numb', '', '', [], [], []],
-        8  => [8, [], 'parentId', 'Id родительского элемента', false, false, 'text', '', '', [], [], []],
-        9  => [9, [], 'items', 'Текущие элементы для выбора', false, false, 'list', '', '', [], [], []],
-        10 => [10, [], 'fieldInfo', 'Настройки поля для формы', false, false, 'list', '', '', [], [], []],
-        11 => [11, [], 'linkProps', 'Настройки для связи', false, false, 'list', '', '', [], [], []],
+        0  => [0, [], 'id', 'Id колонки', false, true, 'text', '', '', 1, [], [], []],
+        1  => [1, [], 'ausData', 'Информация о создании/редактировании', true, false, 'list', '', '', 2, [], [], []],
+        2  => [2, [], 'tag', 'Тэг колонки', true, false, 'numb', '', '', 3, [], [], []],
+        3  => [3, [], 'title', 'Имя колонки', false, false, 'text', '', '', 4, [], [], []],
+        4  => [4, [], 'isSystem', 'Колонка является системной', true, false, 'bool', '', '', 5, [], [], []],
+        5  => [5, [], 'isUnic', 'Значение должно быть уникальным', false, false, 'bool', '', '', 6, [], [], []],
+        6  => [6, [], 'dataType', 'Тип данных', false, false, 'text', '', '', 7, [], [], []],
+        7  => [7, [], 'dataSubType', 'Подтип данных', false, false, 'numb', '', '', 8, [], [], []],
+        8  => [8, [], 'parentId', 'Id родительского элемента', false, false, 'text', '', '', 9, [], [], []],
+        9  => [9, [], 'order', 'Порядок полей', false, true, 'numb', '', '', 10, [], [], []],
+        10 => [10, [], 'items', 'Текущие элементы для выбора', false, false, 'list', '', '', 11, [], [], []],        
+        11 => [11, [], 'linkProps', 'Настройки для связи', false, false, 'list', '', '', 12, [], [], []],
+        12 => [12, [], 'fieldInfo', 'Настройки поля для формы', false, false, 'list', '', '', 13, [], [], []],
         
     ]; 
 
@@ -101,10 +105,12 @@ class TextDataSchem
         "bool" => ['Чекбокс'],
         "time" => ['Время'],       
         "list" => ['Список'],
-        "dict" => ['Cловарь'],
+        "dict" => ['Словарь'],
         "link" => ['Связь'],
         "file" => ['Файл'],
         "grup" => ['Группа'],
+        "ligr" => ['Список групп'],
+        "digr" => ['Словарь групп'],
     ];
 
     //7
@@ -171,8 +177,7 @@ class TextDataSchem
         $this->data = TDB::getInstance($schemDbName, $modelPath);
         
         //Обновляем информацию о схеме из модели в БД
-        if (count ($this->modelSchem) > 0){
-            
+        if (count ($this->modelSchem) > 0){            
             foreach ($this->modelSchem as $id => $info){
                 if (!$this->data->get($id)){
                     $this->data->add($info, $id);                    
@@ -182,12 +187,26 @@ class TextDataSchem
     }    
 
 
-    public function getSchem ($newType="data")
+    public function getSchem ($newType="data", $update=false)
     {
-        $items =  $this->data->all();
+        if (!$this->convertedItems or $update){        
+            $items = $this->data->all();
+            $schem = $this->schemItems;
+            $this->convertedItems = $this->validateAndConvertItems ($items, $schem, "data", $newType);
+        }
+        return $this->convertedItems;
+    }
+
+    public function getLinkedFields ()
+    {
+        $result = [];
         $schem = $this->schemItems;
-        $convertedItems = $this->validateAndConvertItems ($items, $schem, "data", $newType);
-        return $convertedItems;
+        foreach ($this->getSchem () as $sInfo){
+            if (!in_array($sInfo[6], $this->linkTypes)) continue;
+            $result[$sInfo[0]] = $sInfo;
+        }
+        $result = $this->validateAndConvertItems ($result, $schem, "data","dict");
+        return $result;
     }
 
     
@@ -207,19 +226,31 @@ class TextDataSchem
             }
             
         }
+        
         return $result;
     }
 
-    public function validateAndConvertItemValues ($itemInfo, $schem, $cureType="data", $newType="data")
-    {
+    public function validateAndConvertItemValues ($itemInfo, $schem, $cureType="data", $newType="data", $schemUpdate=false)
+    {        
+        if ($schemUpdate){
+            $this->updateSchemByItem ($itemInfo);
+            $schem = $this->getSchem ($newType="data", $update=true);
+        }
+        
         $result = [];
+        $showHash = false;
+
         foreach ($schem as $sId => $sInfo){
             $dataId = $sId;
             $dataTag = $sInfo[2];
             $dataType = $sInfo[6];
 
+            if ($dataTag === 'passHash' and !$showHash){
+                continue;
+            }
+
             if ($cureType =="data"){
-                $cureKey = $dataId;                
+                $cureKey = $dataId;
             } else if ($cureType =="dict"){
                 $cureKey = $dataTag;
             }
@@ -240,18 +271,41 @@ class TextDataSchem
             
             if ($newType === 'data') $returnKey = $dataId;
             if ($newType === 'dict') $returnKey = $dataTag;
+
+            /*
+            if ($this->modelName == 'sess' and $newType == 'dict'){
+                echo $returnKey.' '.$newType.'<br>';
+                print_r($sInfo);                
+            }
+            */
+
             $result[$returnKey] = $cureVal;
         }
+
+        
+        
+        
         return $result;
     }
     
+    protected function updateSchemByItem ($itemInfo)
+    {
+        $cureSchemTags = array_column($this->getSchem(), 2);
+
+        foreach ($itemInfo as $key => $value){
+            if (!in_array($key, $cureSchemTags)){
+                $info[2] = $key;
+                $this->addCol($info);
+            }           
+        }
+    }
     
 
 
     public function addCol ($info)
     {
         
-        $origTag = isset($info[2])  ? $info[2] : "";
+        $origTag = isset($info[2]) ? $info[2] : "";
         $tag = $origTag = $this->convertToValidVariableName($origTag);
         
         //Проверка на существование поля с таким tag
@@ -484,6 +538,35 @@ class TextDataSchem
         }        
 
         return $cureInfo;
+    } 
+
+    
+
+    public function fillLinkedItems(array $schemDict): array
+    {
+        foreach ($schemDict as &$field) {
+            if (
+                in_array($field['dataType'], $this->linkTypes)
+                && !empty($field['linkProps'])
+                && !empty($field['linkProps'][0])
+            ) {
+                $linkedModelName = $field['linkProps'][0];
+                $linkedFields = $field['linkProps'][1] ?? ['id'];
+                $linkedModel = new TDM($linkedModelName, $this->modelPath);
+                $all = $linkedModel->all();                
+                $items = [];
+                foreach ($all as $row) {
+                    $rowId = $row['id'] ?? $row[0];
+                    $display = [];
+                    foreach ($linkedFields as $f) {
+                        $display[] = $row[$f] ?? '';
+                    }
+                    $items[] = ["id"=>$rowId, "title"=> trim(implode(' ', $display))];
+                }
+                //print_r($items);
+                $field['items'] = $items;
+            }
+        }
+        return $schemDict;
     }
-   
 }

@@ -1,0 +1,17 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataModelUploads Class Guide
+
+## Назначение
+Класс `TextDataModelUploads` наследует `TextDataModel` и предоставляет методы для работы с загрузками.
+
+## Основные методы
+- `__construct(string $dbName='', string $dbPath='', string $indexType='')`: Конструктор класса.
+- `del($id)`: Удаляет запись.
+- `upload()`: Загружает файл.
+- `getMediaDuration($filePath)`: Возвращает длительность медиафайла.
+- `imgResizeToJpg($src, $dest, $maxWidth, $maxHeight, $quality=90)`: Изменяет размер изображения и сохраняет в формате JPG.
+

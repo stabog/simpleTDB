@@ -305,6 +305,15 @@ class TextDataBase implements TDBInterface
     }
 
 
+    public function clean(): bool
+    {
+        $this->items = [];
+        $this->props["lastId"] = 0;
+        $this->fileSave();        
+        return true;
+    }
+
+
 
 
 
@@ -382,6 +391,13 @@ class TextDataBase implements TDBInterface
             }
 
             fclose($fileHandle);
+            if (isset($result["head"])) {
+                $this->head = $result["head"];
+                unset($result["head"]);
+                if (isset($this->head[1][0])){
+                    $this->props["indexType"] = $this->head[1][0];
+                }
+            }
 
             if ($this->props["indexType"] === "num") {
                 $this->setLastId($result);
@@ -390,10 +406,7 @@ class TextDataBase implements TDBInterface
                 $keys = array_keys($result);
                 $this->props["lastId"] = end($keys);
             }
-            if (isset($result["head"])) {
-                $this->head = $result["head"];
-                unset($result["head"]);
-            }
+            
             $this->items = $result;
         } catch (Exception $e) {
             $this->log('Error reading file ' . $this->props["path"] . ': ' . $e->getMessage());
@@ -417,7 +430,7 @@ class TextDataBase implements TDBInterface
                 }
             } else {
                 $item[0] = $this->props["lastId"] + 1;
-                $this->props["lastId"]++;
+                $this->props["lastId"] = $item[0];
             }
         }
 

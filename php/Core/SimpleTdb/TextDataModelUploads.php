@@ -20,7 +20,7 @@ class TextDataModelUploads extends TDM {
         0 => [0, [], 'id', 'Id колонки', true, true, 'text', '', '', [], [], []],
         1 => [1, [], 'ausData', 'Create/Edit/Sync информация', true, false, 'list', '', '', [], [], []],
         2 => [2, [], 'newName', 'Новое имя', true, true, 'text', '', '', [], [], []],
-        3 => [3, [], 'origName', 'Оригинальное имя', true, false, 'text', '', '', [], [], []],
+        3 => [3, [], 'origName', 'Оригинальное имя', false, false, 'text', '', '', [], [], []],
         4 => [4, [], 'url', 'Ссылка', true, false, 'text', '', '', [], [], []],
         5 => [5, [], 'type', 'Тип', true, false, 'text', '', '', [], [], []],
         6 => [6, [], 'size', 'Размер', true, false, 'numb', '', '', [], [], []],
@@ -203,7 +203,7 @@ class TextDataModelUploads extends TDM {
         'default' => "Неизвестная ошибка",
     ];
 
-    public function __construct(string $dbName='', string $dbPath='', string $indexType='') {
+    public function __construct(string $dbName='', string $dbPath='', string $indexType='', string $uploadPath='') {
         // Вызов родительского конструктора
         parent::__construct($dbName, $dbPath, $indexType);
 
@@ -211,21 +211,9 @@ class TextDataModelUploads extends TDM {
         $dbDir = dirname($dbPath);
 
         // Назначение дополнительных переменных
-        $this->uploadDir = $dbDir . '/uploads/';
+        $this->uploadDir = ($uploadPath != '') ? $uploadPath : $dbDir . '/uploads/';
         $this->imgMediumDir = $this->uploadDir . 'm/';
-        $this->imgSmallDir = $this->uploadDir . 's/';
-
-        // Проверка и создание директории, если она не существует
-        if (!is_dir($this->uploadDir)) {
-            mkdir($this->uploadDir, 0755, true);
-        }
-        
-        if (!is_dir($this->imgMediumDir)) {
-            mkdir($this->imgMediumDir, 0755, true);
-        }
-        if (!is_dir($this->imgSmallDir)) {
-            mkdir($this->imgSmallDir, 0755, true);
-        }
+        $this->imgSmallDir = $this->uploadDir . 's/';        
     }
 
 
@@ -269,6 +257,18 @@ class TextDataModelUploads extends TDM {
             'success' => false,
             'error' => '',
         ];
+
+        // Проверка и создание директории, если она не существует
+        if (!is_dir($this->uploadDir)) {
+            mkdir($this->uploadDir, 0755, true);
+        }
+        
+        if (!is_dir($this->imgMediumDir)) {
+            mkdir($this->imgMediumDir, 0755, true);
+        }
+        if (!is_dir($this->imgSmallDir)) {
+            mkdir($this->imgSmallDir, 0755, true);
+        }
 
         if ($_SERVER['REQUEST_METHOD'] !== 'POST') {
             $response ['error'] = 'Неверный метод запроса';
@@ -395,7 +395,8 @@ class TextDataModelUploads extends TDM {
             9 => $duration ?? '',
             10 => [],
         ];
-        
+
+        $tobase = $this->postProcess ($tobase);        
 
         $newId = $this->data->add($tobase);
 
@@ -448,5 +449,10 @@ class TextDataModelUploads extends TDM {
         imagedestroy($isrc);
         imagedestroy($idest);
         return 0; // успешно
+    }
+
+    protected function postProcess ($tobase)
+    {
+        return $tobase;
     }
 }

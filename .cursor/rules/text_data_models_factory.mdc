@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# ModelsFactory Class Guide
+
+## Назначение
+Класс `ModelsFactory` предоставляет методы для создания моделей данных.
+
+## Основные методы
+- `createModels(string $rootBaseName='root')`: Создает модели данных.
+

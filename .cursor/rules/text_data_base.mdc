@@ -1,0 +1,39 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataBase Class Guide
+
+## Назначение
+Класс `TextDataBase` реализует интерфейс `TDBInterface` и предоставляет методы для работы с текстовыми базами данных.
+
+## Основные методы
+- `getInstance($dbName, $dbPath = "", $indexType = "")`: Возвращает экземпляр класса `TextDataBase`.
+- `setActiveUser($id)`: Устанавливает активного пользователя.
+- `getProps()`: Возвращает свойства базы данных.
+- `getValueByKeys(array $data, array $keys)`: Возвращает значения по ключам.
+- `all(array $filters = [], array $sort = [])`: Возвращает все записи.
+- `flt(array $params, array $sort = [])`: Возвращает отфильтрованные записи.
+- `add(array $item, $id='')`: Добавляет запись.
+- `addItems(array $items)`: Добавляет несколько записей.
+- `get($id)`: Возвращает запись по ID.
+- `getValues($id, array $keys)`: Возвращает значения по ключам для записи.
+- `upd($id, array $item)`: Обновляет запись.
+- `updItems(array $items)`: Обновляет несколько записей.
+- `rpl($id, array $item)`: Заменяет запись.
+- `del($id)`: Удаляет запись.
+- `delItems(array $keys)`: Удаляет несколько записей.
+- `clean()`: Очищает базу данных.
+- `setItemProps(array $props, $userId)`: Устанавливает свойства записи.
+- `setLastId(array $array)`: Устанавливает последний ID.
+- `makeFileIfNotExists()`: Создает файл, если он не существует.
+- `fileRead(bool $isIndexed = true)`: Читает файл.
+- `fileUpdate(array $item, $id='')`: Обновляет файл.
+- `fileSave()`: Сохраняет файл.
+- `log($message)`: Логирует сообщение.
+- `arrayToString(array $array, array $separators, $delBreaks = true)`: Преобразует массив в строку.
+- `stringToArray(string $string, array $separators)`: Преобразует строку в массив.
+- `guidv4($data = null)`: Генерирует GUID.
+- `generateUniqueString(int $length)`: Генерирует уникальную строку.
+

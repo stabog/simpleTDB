@@ -1,0 +1,13 @@
+---
+description: 
+globs: 
+alwaysApply: false
+---
+# TextDataModelException Class Guide
+
+## Назначение
+Класс `TextDataModelException` наследует `Exception` и предоставляет методы для работы с исключениями.
+
+## Основные методы
+- `__construct(string $message, int $code = 0, ?\Throwable $previous = null)`: Конструктор класса.
+
