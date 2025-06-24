@@ -163,7 +163,21 @@ class TextDataModel {
 
     public function addItems($items)
     {        
-        return $this->data->addItems($items);       
+        return $this->data->addItems($items);
+        
+        if (!$info ) {
+            throw new TextDataModelException("Не корректные данные для add.");
+        }
+        
+        $info = $this->schem->validateAndConvertItemValues ($info, $this->schem->getSchem(), "dict", "data", $this->schemUpdate);
+        $newIds = $this->data->add($info);
+        
+        if ($newId) {
+            $this->updateLinkedBasesNew($newId, $info);
+            return $newId;
+        }
+
+        return false;
     }
 
     public function updItems($items)

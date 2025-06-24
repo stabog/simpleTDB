@@ -174,6 +174,11 @@ try {
             if ($result["item_id"]) $result["success"] = true;
             break;
 
+        case 'addItems':
+            $result["items_id"] = $model->add($data['addItems']);
+            if ($result["items_id"]) $result["success"] = true;
+            break;
+
         case 'upd':
             $result["success"] = $model->upd($id, $data['item']);
             break;

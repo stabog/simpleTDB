@@ -182,9 +182,10 @@ class TextDataBase implements TDBInterface
         return  false;
     }
 
-    public function addItems(array $items): bool
+    public function addItems(array $items): array
     {
         $count = $this->props["lastId"];
+        $ids = [];
         foreach ($items as $id => $info){
             $count++;
 
@@ -201,11 +202,13 @@ class TextDataBase implements TDBInterface
 
             $info[1] = $this->setItemProps([], $this->activeUser);
             $this->items[$info[0]] = $info;
+
+            $ids[] = $info[0];
         }
         $this->fileSave();
         
         
-        return true;
+        return $ids;
     }
 
     public function get($id)

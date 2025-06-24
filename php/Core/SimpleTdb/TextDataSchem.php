@@ -230,7 +230,7 @@ class TextDataSchem
         return $result;
     }
 
-    public function validateAndConvertItemValues ($itemInfo, $schem, $cureType="data", $newType="data", $schemUpdate=false)
+    public function validateAndConvertItemValues ($itemInfo, $schem, $cureType="data", $newType="data", $schemUpdate=false, $showHash = false)
     {        
         if ($schemUpdate){
             $this->updateSchemByItem ($itemInfo);
@@ -238,7 +238,6 @@ class TextDataSchem
         }
         
         $result = [];
-        $showHash = false;
 
         foreach ($schem as $sId => $sInfo){
             $dataId = $sId;
@@ -295,18 +294,22 @@ class TextDataSchem
         foreach ($itemInfo as $key => $value){
             if (!in_array($key, $cureTags)){
                 $info[2] = $key;
-                $this->addCol($info);
+                $this->addCol($info, $modifyTag=false);
             }           
         }
     }
     
 
 
-    public function addCol ($info)
+    public function addCol ($info, $modifyTag=true)
     {
         
-        $origTag = isset($info[2]) ? $info[2] : "";
-        $tag = $origTag = $this->convertToValidVariableName($origTag);
+        $tag = $origTag = isset($info[2]) ? $info[2] : "";
+
+        if ($modifyTag){
+            $tag = $origTag = $this->convertToValidVariableName($origTag);
+        }
+        
         
         //Проверка на существование поля с таким tag
         $cureTags = array_column($this->data->all(), 2);

@@ -18,10 +18,15 @@ class TextDataAuth
         $this->usersModel = new TextDataModelUsers('users', $dbPath, 'guid');
         $this->sessionsModel = new TextDataModelSessions('sess', $dbPath);
 
-        $this->usersModel->setRespFormatToDict([
-            "showHash" => true,
-        ]);
-        $this->sessionsModel->setRespFormatToDict([]);
+        if (count($this->usersModel->all()) == 0){
+            $userInfo = [
+                'email' => 'admin@domain.com',
+                'password' => 'password',
+                'passwordRepeat' => 'password',
+                'role' => 50,
+            ];
+            $this->register($userInfo);
+        }
     }
 
     public function register(array $userInfo)
@@ -51,14 +56,19 @@ class TextDataAuth
         }
 
         $user = $this->usersModel->getSysInfo($userId);
+        $hash = $user["passHash"] ?? '';
+
         
         /*
+        echo $password;
+        echo "\r\n";        
         echo password_hash($password, PASSWORD_BCRYPT);
-        echo "\r\n";
-        echo $user["passHash"];
+        echo "\r\n!";
+        echo $hash;
         */
         
-        if(!password_verify($password, $user["passHash"])){
+        
+        if(!password_verify($password, $hash)){
             throw new TextDataModelException("Пароль неправильный.");
         }
 

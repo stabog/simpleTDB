@@ -60,13 +60,14 @@ class TextDataModelUsers extends TextDataModel
         }
 
         $userInfo['passHash'] = password_hash($userInfo['password'], PASSWORD_BCRYPT);
+
         unset($userInfo['password']);
         unset($userInfo['passwordRepeat']);
-        $userInfo['role'] = 1;
-        $userInfo['status'] = 2;
+        $userInfo['role'] = $userInfo['role'] ?? 1;
+        $userInfo['status'] = $userInfo['status'] ?? 2;
 
         //$info = $this->schem->checkValueBySchem($userInfo, "sys");
-        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data", $showHash=true);        
+        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data", $schemUpdate=false, $showHash=true);        
         $newId = $this->data->add($info);
 
         if ($newId) {
@@ -94,7 +95,7 @@ class TextDataModelUsers extends TextDataModel
         }
 
         $userInfo['passHash'] = password_hash($data['password'], PASSWORD_BCRYPT);
-        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data", $showHash=true);        
+        $info  = $this->schem->validateAndConvertItemValues ($userInfo, $this->schem->getSchem(), "dict", "data", $schemUpdate=false, $showHash=true);        
         return $newId = $this->data->upd($data['id'], $info);
         
         
@@ -112,7 +113,7 @@ class TextDataModelUsers extends TextDataModel
             return false;
         }
         
-        $item = $this->schem->validateAndConvertItemValues ($item, $this->schem->getSchem(), "data", "dict", $showHash=true);
+        $item = $this->schem->validateAndConvertItemValues ($item, $this->schem->getSchem(), "data", "dict", $schemUpdate=false, $showHash=true);
         return $item;
     }
     
